@@ -26,6 +26,13 @@ document.getElementById('global-fab').addEventListener('click', () => {
   openPostModal(currentSlot ? currentSlot.characterId : characterId);
 });
 
+attachContextMenu(imageRow, () => currentSlot, async (slot) => {
+  await DB.deleteSlot(slot.id);
+  location.href = slot.characterId
+    ? `character.html?id=${encodeURIComponent(slot.characterId)}`
+    : 'index.html';
+});
+
 async function render() {
   currentSlot = await DB.getSlot(slotId);
   if (!currentSlot) {

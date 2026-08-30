@@ -183,5 +183,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     location.href = `slot.html?id=${encodeURIComponent(slot.id)}&cid=${encodeURIComponent(slot.characterId)}`;
   });
 
+  attachContextMenu(card, slot, onDelete);
+
   return card;
 }

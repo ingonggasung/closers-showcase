@@ -4,6 +4,7 @@
 //   slots:      { characterId, characterName, ownerId, ownerName, title, images[](max 10),
 //                 parts: {...costume/accessory keys}, notes(<=200 chars),
 //                 order, createdAt }
+//   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
@@ -100,6 +101,29 @@ const DB = {
       batch.update(firestore.collection('slots').doc(id), { order: i });
     });
     await batch.commit();
+  },
+
+  async isScrapped(slotId) {
+    if (!currentUser) return false;
+    const doc = await firestore.collection('scraps').doc(`${currentUser.uid}_${slotId}`).get();
+    return doc.exists;
+  },
+
+  async addScrap(slotId) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    await firestore
+      .collection('scraps')
+      .doc(`${currentUser.uid}_${slotId}`)
+      .set({
+        userId: currentUser.uid,
+        slotId,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+  },
+
+  async removeScrap(slotId) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    await firestore.collection('scraps').doc(`${currentUser.uid}_${slotId}`).delete();
   },
 };
 

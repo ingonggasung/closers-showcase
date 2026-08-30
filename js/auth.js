@@ -32,6 +32,10 @@ function isOwner(record) {
   return !!currentUser && !!record && record.ownerId === currentUser.uid;
 }
 
+function isAdmin() {
+  return !!currentUser && currentUser.email === ADMIN_EMAIL;
+}
+
 // Renders the login/logout control into `container` and keeps it in sync
 // with auth state. Call once per page.
 function mountAuthBar(container) {

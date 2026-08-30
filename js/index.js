@@ -12,10 +12,6 @@ let pendingIconFile = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
 
-function isAdmin() {
-  return !!currentUser && currentUser.email === ADMIN_EMAIL;
-}
-
 document.getElementById('global-fab').addEventListener('click', () => openPostModal());
 
 filterToggle.addEventListener('click', () => {
