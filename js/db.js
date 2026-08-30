@@ -1,8 +1,8 @@
 // Firestore-backed data layer for Closers Showcase.
 // Collections:
 //   characters: { name, icon(Cloudinary URL), ownerId, ownerName, createdAt }
-//   slots:      { characterId, ownerId, ownerName, images[](max 10),
-//                 parts: { hair, lens, top, bottom, shoes, gloves }, notes(<=200 chars),
+//   slots:      { characterId, characterName, ownerId, ownerName, images[](max 10),
+//                 parts: {...costume/accessory keys}, notes(<=200 chars),
 //                 order, createdAt }
 
 function docToObj(doc) {
@@ -42,12 +42,13 @@ const DB = {
 
   async addSlot({ characterId, images, parts, notes }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
-    const existing = await firestore
-      .collection('slots')
-      .where('characterId', '==', characterId)
-      .get();
+    const [existing, character] = await Promise.all([
+      firestore.collection('slots').where('characterId', '==', characterId).get(),
+      firestore.collection('characters').doc(characterId).get(),
+    ]);
     const ref = await firestore.collection('slots').add({
       characterId,
+      characterName: character.exists ? character.data().name : '',
       ownerId: currentUser.uid,
       ownerName: currentUser.displayName || currentUser.email || '사용자',
       images: images || [],
@@ -62,6 +63,11 @@ const DB = {
   async getSlotsByCharacter(characterId) {
     const snap = await firestore.collection('slots').where('characterId', '==', characterId).get();
     return snap.docs.map(docToObj).sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+
+  async getAllSlots() {
+    const snap = await firestore.collection('slots').orderBy('createdAt', 'desc').get();
+    return snap.docs.map(docToObj);
   },
 
   async getSlot(id) {

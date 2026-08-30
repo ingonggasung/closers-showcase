@@ -4,6 +4,8 @@ const nameInput = document.getElementById('char-name-input');
 const iconInput = document.getElementById('char-icon-input');
 const iconPreview = document.getElementById('char-icon-preview');
 const searchInput = document.getElementById('char-search');
+const feedGrid = document.getElementById('feed-grid');
+const feedSearchInput = document.getElementById('feed-search');
 
 let pendingIconFile = null;
 
@@ -16,6 +18,10 @@ function isAdmin() {
 document.getElementById('global-fab').addEventListener('click', () => openPostModal());
 
 async function render() {
+  await Promise.all([renderCharacters(), renderFeed()]);
+}
+
+async function renderCharacters() {
   const characters = await DB.getCharacters();
   grid.innerHTML = '';
 
@@ -72,6 +78,40 @@ function applyFilter() {
 }
 
 searchInput.addEventListener('input', applyFilter);
+
+async function renderFeed() {
+  const slots = await DB.getAllSlots();
+  feedGrid.innerHTML = '';
+
+  slots.forEach((slot) => {
+    const card = buildSlotCard(slot, {
+      showCharacterTag: true,
+      onDelete: async (s) => {
+        await DB.deleteSlot(s.id);
+        renderFeed();
+      },
+    });
+    feedGrid.appendChild(card);
+  });
+
+  if (slots.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.textContent = '아직 등록된 게시글이 없어요.';
+    feedGrid.appendChild(hint);
+  }
+
+  applyFeedFilter();
+}
+
+function applyFeedFilter() {
+  const q = feedSearchInput.value.trim().toLowerCase();
+  feedGrid.querySelectorAll('.slot-card').forEach((card) => {
+    card.hidden = q.length > 0 && !card.dataset.title.includes(q);
+  });
+}
+
+feedSearchInput.addEventListener('input', applyFeedFilter);
 
 function openModal() {
   nameInput.value = '';
@@ -134,16 +174,26 @@ document.getElementById('reset-char').addEventListener('click', () => {
   applyFilter();
 });
 
-function showLoadError() {
+function showCharError() {
   grid.innerHTML =
     '<div class="empty-hint" style="grid-column:1/-1">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
 }
 
-authReady.then(render).catch((err) => {
-  console.error(err);
-  showLoadError();
-});
-onAuthChange(() => render().catch((err) => {
-  console.error(err);
-  showLoadError();
-}));
+function showFeedError() {
+  feedGrid.innerHTML =
+    '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
+}
+
+function renderAll() {
+  renderCharacters().catch((err) => {
+    console.error(err);
+    showCharError();
+  });
+  renderFeed().catch((err) => {
+    console.error(err);
+    showFeedError();
+  });
+}
+
+authReady.then(renderAll);
+onAuthChange(renderAll);
