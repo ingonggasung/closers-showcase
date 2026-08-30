@@ -1,6 +1,6 @@
 // Firebase project config (safe to be public — access is controlled by Firestore security rules).
 const firebaseConfig = {
-  apiKey: "AIzaSyDRCDIZUMUYfQzQviqBTRMdoGx6WCessY",
+  apiKey: "AIzaSyDRCDIZUMUYfQzQviqBTRMdoGx6WCessyY",
   authDomain: "closers-showcase.firebaseapp.com",
   projectId: "closers-showcase",
   storageBucket: "closers-showcase.firebasestorage.app",
