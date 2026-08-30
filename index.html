@@ -10,19 +10,19 @@
 
 <div class="page">
   <div class="top-bar">
-    <h1>필터</h1>
+    <button class="filter-toggle" id="filter-toggle" aria-expanded="true">
+      <span class="chevron">▾</span> 필터
+    </button>
     <div id="auth-bar"></div>
   </div>
 
-  <div class="section-head">
-    <h2>캐릭터</h2>
-    <div class="section-actions">
-      <input type="text" id="char-search" class="search-input" placeholder="캐릭터 검색" />
-      <button class="pill" id="reset-char">초기화</button>
+  <div id="filter-section">
+    <div class="section-head">
+      <h2>캐릭터</h2>
     </div>
-  </div>
 
-  <div class="char-grid" id="char-grid"></div>
+    <div class="char-grid" id="char-grid"></div>
+  </div>
 
   <div class="section-head">
     <h2>전체 게시글</h2>

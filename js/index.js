@@ -3,9 +3,10 @@ const modal = document.getElementById('char-modal');
 const nameInput = document.getElementById('char-name-input');
 const iconInput = document.getElementById('char-icon-input');
 const iconPreview = document.getElementById('char-icon-preview');
-const searchInput = document.getElementById('char-search');
 const feedGrid = document.getElementById('feed-grid');
 const feedSearchInput = document.getElementById('feed-search');
+const filterToggle = document.getElementById('filter-toggle');
+const filterSection = document.getElementById('filter-section');
 
 let pendingIconFile = null;
 
@@ -16,6 +17,12 @@ function isAdmin() {
 }
 
 document.getElementById('global-fab').addEventListener('click', () => openPostModal());
+
+filterToggle.addEventListener('click', () => {
+  const expanded = filterToggle.getAttribute('aria-expanded') === 'true';
+  filterToggle.setAttribute('aria-expanded', String(!expanded));
+  filterSection.hidden = expanded;
+});
 
 let suppressCharClick = false;
 grid.addEventListener('dragstart', (e) => {
@@ -40,7 +47,6 @@ async function renderCharacters() {
   characters.forEach((c) => {
     const tile = document.createElement('div');
     tile.className = 'char-tile';
-    tile.dataset.name = (c.name || '').toLowerCase();
     if (isAdmin()) {
       tile.dataset.role = 'item';
       tile.dataset.id = c.id;
@@ -86,18 +92,7 @@ async function renderCharacters() {
       : '등록된 캐릭터가 없어요. 관리자가 캐릭터를 등록하면 여기에 표시됩니다.';
     grid.insertBefore(hint, grid.firstChild);
   }
-
-  applyFilter();
 }
-
-function applyFilter() {
-  const q = searchInput.value.trim().toLowerCase();
-  grid.querySelectorAll('.char-tile:not(.add-tile)').forEach((tile) => {
-    tile.hidden = q.length > 0 && !tile.dataset.name.includes(q);
-  });
-}
-
-searchInput.addEventListener('input', applyFilter);
 
 async function renderFeed() {
   const slots = await DB.getAllSlots();
@@ -185,11 +180,6 @@ document.getElementById('char-save').addEventListener('click', async () => {
     saveBtn.disabled = false;
     saveBtn.textContent = '추가';
   }
-});
-
-document.getElementById('reset-char').addEventListener('click', () => {
-  searchInput.value = '';
-  applyFilter();
 });
 
 function showCharError() {
