@@ -397,8 +397,14 @@ button {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   background: #101114;
+  cursor: grab;
+  user-select: none;
 }
 .slot-carousel::-webkit-scrollbar { display: none; }
+.slot-carousel.dragging-scroll {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
 .slot-carousel .frame {
   flex: 0 0 100%;
   width: 100%;
@@ -506,6 +512,12 @@ button {
   overflow-x: auto;
   padding: 6px 2px 16px;
   scroll-snap-type: x proximity;
+  cursor: grab;
+  user-select: none;
+}
+.image-row.dragging-scroll {
+  cursor: grabbing;
+  scroll-snap-type: none;
 }
 .image-row .shot {
   flex: 0 0 auto;

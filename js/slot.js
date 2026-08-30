@@ -20,6 +20,7 @@ const MAX_IMAGES = 10;
 let currentSlot = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
+enableDragScroll(imageRow);
 
 document.getElementById('global-fab').addEventListener('click', () => {
   openPostModal(currentSlot ? currentSlot.characterId : characterId);
@@ -69,7 +70,7 @@ function renderImages(owner) {
   images.forEach((src, i) => {
     const shot = document.createElement('div');
     shot.className = 'shot';
-    shot.innerHTML = `<img src="${escapeHtml(src)}" alt="사진 ${i + 1}">`;
+    shot.innerHTML = `<img src="${escapeHtml(src)}" alt="사진 ${i + 1}" draggable="false">`;
     if (owner) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-shot';

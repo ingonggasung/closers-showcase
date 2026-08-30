@@ -18,6 +18,47 @@ function slotDisplayTitle(slot) {
   return slot.title || slotSummary(slot);
 }
 
+// Lets a horizontally-scrolling element (image carousel) be dragged with the
+// mouse to scroll, like a touch swipe. Touch/pen input is left alone since
+// it already scrolls natively via overflow-x. If the drag moved enough,
+// suppresses the next card click so a swipe doesn't also trigger navigation.
+function enableDragScroll(el) {
+  let isDown = false;
+  let startX = 0;
+  let startScrollLeft = 0;
+  let moved = false;
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    if (e.target.closest('button')) return; // let nav/delete buttons handle their own clicks
+    isDown = true;
+    moved = false;
+    startX = e.clientX;
+    startScrollLeft = el.scrollLeft;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('dragging-scroll');
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    if (!isDown) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) moved = true;
+    el.scrollLeft = startScrollLeft - dx;
+  });
+
+  function endDrag() {
+    if (!isDown) return;
+    isDown = false;
+    el.classList.remove('dragging-scroll');
+    if (moved) {
+      suppressSlotClick = true;
+      setTimeout(() => (suppressSlotClick = false), 0);
+    }
+  }
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+}
+
 // CSS `column-count` can silently collapse to fewer columns when there's
 // little/uneven content (column-fill: balance). Building N real column
 // elements and round-robin-appending into them guarantees the column count.
@@ -61,6 +102,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
 
   const carousel = document.createElement('div');
   carousel.className = 'slot-carousel';
+  carousel.draggable = false; // don't let the card's own reorder-drag start over the image area
   if (!slot.images || slot.images.length === 0) {
     const frame = document.createElement('div');
     frame.className = 'frame empty';
@@ -70,13 +112,14 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     slot.images.forEach((src) => {
       const frame = document.createElement('div');
       frame.className = 'frame';
-      frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(displayTitle)}">`;
+      frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(displayTitle)}" draggable="false">`;
       carousel.appendChild(frame);
     });
   }
   card.appendChild(carousel);
 
   if (slot.images && slot.images.length > 1) {
+    enableDragScroll(carousel);
     const prev = document.createElement('button');
     prev.className = 'slot-nav prev';
     prev.textContent = '‹';
