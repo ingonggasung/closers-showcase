@@ -18,6 +18,31 @@ function slotDisplayTitle(slot) {
   return slot.title || slotSummary(slot);
 }
 
+// Scrolls `el` to `targetLeft` by directly driving scrollLeft every frame,
+// instead of the browser's native scrollBy({behavior:'smooth'}). Native
+// smooth-scroll gets interrupted/reset when something changes the element's
+// layout (e.g. height) mid-animation from inside a 'scroll' handler, which
+// is exactly what the live-resizing carousel needs to do.
+function animateScrollTo(el, targetLeft, duration = 260) {
+  const startLeft = el.scrollLeft;
+  const delta = targetLeft - startLeft;
+  if (delta === 0) return;
+  const startTime = performance.now();
+  el.classList.add('dragging-scroll'); // reuse to suspend scroll-snap during the animation
+
+  function step(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.scrollLeft = startLeft + delta * eased;
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.classList.remove('dragging-scroll');
+    }
+  }
+  requestAnimationFrame(step);
+}
+
 // Lets a horizontally-scrolling element (image carousel) be dragged with the
 // mouse to scroll, like a touch swipe. Touch/pen input is left alone since
 // it already scrolls natively via overflow-x. If the drag moved enough,
@@ -156,14 +181,15 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     prev.textContent = '‹';
     prev.addEventListener('click', (e) => {
       e.stopPropagation();
-      carousel.scrollBy({ left: -carousel.clientWidth, behavior: 'smooth' });
+      animateScrollTo(carousel, Math.max(0, carousel.scrollLeft - carousel.clientWidth));
     });
     const next = document.createElement('button');
     next.className = 'slot-nav next';
     next.textContent = '›';
     next.addEventListener('click', (e) => {
       e.stopPropagation();
-      carousel.scrollBy({ left: carousel.clientWidth, behavior: 'smooth' });
+      const max = carousel.scrollWidth - carousel.clientWidth;
+      animateScrollTo(carousel, Math.min(max, carousel.scrollLeft + carousel.clientWidth));
     });
     carousel.appendChild(prev);
     carousel.appendChild(next);
@@ -176,10 +202,20 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       dots.appendChild(d);
       return d;
     });
+    let heightRAF = null;
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
-      updateCarouselHeight();
+
+      // Deferred to the next frame instead of run synchronously here: mutating
+      // height inside the scroll event's own callback can interrupt a
+      // browser-driven scroll animation in progress (native smooth-scroll or
+      // touch momentum), which is exactly the bug this avoids.
+      if (heightRAF) cancelAnimationFrame(heightRAF);
+      heightRAF = requestAnimationFrame(() => {
+        heightRAF = null;
+        updateCarouselHeight();
+      });
     });
     card.appendChild(dots);
   }
