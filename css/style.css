@@ -362,10 +362,20 @@ button {
 }
 
 /* ---------- Slot grid (character page) ---------- */
-/* Masonry: fixed column width, each card keeps its own natural height. */
+/* Masonry: items are pre-split into exactly N column elements in JS
+   (renderMasonryGrid) rather than relying on CSS column-count, which
+   silently collapses to fewer columns when content is sparse/uneven. */
 .slot-grid {
-  column-count: 3;
-  column-gap: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.masonry-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .slot-card {
   position: relative;
@@ -374,10 +384,6 @@ button {
   background: var(--panel-2);
   border: 1px solid var(--border);
   cursor: pointer;
-  display: inline-block;
-  width: 100%;
-  break-inside: avoid;
-  margin-bottom: 14px;
 }
 .slot-card[data-role="item"] { cursor: grab; }
 .slot-card.dragging { opacity: .35; }

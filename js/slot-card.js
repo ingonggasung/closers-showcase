@@ -18,6 +18,27 @@ function slotDisplayTitle(slot) {
   return slot.title || slotSummary(slot);
 }
 
+// CSS `column-count` can silently collapse to fewer columns when there's
+// little/uneven content (column-fill: balance). Building N real column
+// elements and round-robin-appending into them guarantees the column count.
+function renderMasonryGrid(container, count) {
+  container.innerHTML = '';
+  const cols = [];
+  for (let i = 0; i < count; i++) {
+    const col = document.createElement('div');
+    col.className = 'masonry-col';
+    container.appendChild(col);
+    cols.push(col);
+  }
+  let i = 0;
+  return {
+    add(el) {
+      cols[i % count].appendChild(el);
+      i++;
+    },
+  };
+}
+
 // options:
 //   draggable: true to mark the card for drag-reorder (only when it's the
 //              viewer's own post within a single character's grid)

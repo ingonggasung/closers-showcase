@@ -81,8 +81,13 @@ searchInput.addEventListener('input', applyFilter);
 
 async function renderFeed() {
   const slots = await DB.getAllSlots();
-  feedGrid.innerHTML = '';
 
+  if (slots.length === 0) {
+    feedGrid.innerHTML = '<div class="empty-hint">아직 등록된 게시글이 없어요.</div>';
+    return;
+  }
+
+  const masonry = renderMasonryGrid(feedGrid, 3);
   slots.forEach((slot) => {
     const card = buildSlotCard(slot, {
       showCharacterTag: true,
@@ -91,15 +96,8 @@ async function renderFeed() {
         renderFeed();
       },
     });
-    feedGrid.appendChild(card);
+    masonry.add(card);
   });
-
-  if (slots.length === 0) {
-    const hint = document.createElement('div');
-    hint.className = 'empty-hint';
-    hint.textContent = '아직 등록된 게시글이 없어요.';
-    feedGrid.appendChild(hint);
-  }
 
   applyFeedFilter();
 }
