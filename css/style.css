@@ -326,12 +326,6 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.char-title .char-owner {
-  max-width: none;
-  text-align: left;
-  font-size: 12px;
-  margin-top: 2px;
-}
 .char-del {
   position: absolute;
   top: -4px;

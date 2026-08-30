@@ -28,7 +28,6 @@ async function render() {
         ${c.icon ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}">` : escapeHtml((c.name || '?').slice(0, 1))}
       </a>
       <div class="char-name">${escapeHtml(c.name || '이름없음')}</div>
-      <div class="char-owner">by ${escapeHtml(c.ownerName || '익명')}</div>
       ${isAdmin() ? '<button class="char-del" title="삭제">×</button>' : ''}
     `;
     if (isAdmin()) {

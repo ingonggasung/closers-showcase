@@ -24,7 +24,6 @@ async function renderHeader() {
     return;
   }
   document.getElementById('char-name').textContent = character.name;
-  document.getElementById('char-owner').textContent = `by ${character.ownerName || '익명'}`;
   const icon = document.getElementById('char-icon');
   icon.src = character.icon || '';
   icon.style.display = character.icon ? 'block' : 'none';
