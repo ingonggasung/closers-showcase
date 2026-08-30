@@ -1,7 +1,7 @@
 // Firestore-backed data layer for Closers Showcase.
 // Collections:
 //   characters: { name, icon(Cloudinary URL), ownerId, ownerName, createdAt }
-//   slots:      { characterId, characterName, ownerId, ownerName, images[](max 10),
+//   slots:      { characterId, characterName, ownerId, ownerName, title, images[](max 10),
 //                 parts: {...costume/accessory keys}, notes(<=200 chars),
 //                 order, createdAt }
 
@@ -40,7 +40,7 @@ const DB = {
     await batch.commit();
   },
 
-  async addSlot({ characterId, images, parts, notes }) {
+  async addSlot({ characterId, title, images, parts, notes }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const [existing, character] = await Promise.all([
       firestore.collection('slots').where('characterId', '==', characterId).get(),
@@ -51,6 +51,7 @@ const DB = {
       characterName: character.exists ? character.data().name : '',
       ownerId: currentUser.uid,
       ownerName: currentUser.displayName || currentUser.email || '사용자',
+      title: (title || '').slice(0, 60),
       images: images || [],
       parts: parts || {},
       notes: (notes || '').slice(0, 200),

@@ -14,6 +14,10 @@ function setupDragSuppression(container) {
   });
 }
 
+function slotDisplayTitle(slot) {
+  return slot.title || slotSummary(slot);
+}
+
 // options:
 //   draggable: true to mark the card for drag-reorder (only when it's the
 //              viewer's own post within a single character's grid)
@@ -21,9 +25,11 @@ function setupDragSuppression(container) {
 //              (used on the cross-character home feed)
 //   onDelete: async (slot) => void, called after delete confirmation
 function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDelete } = {}) {
+  const displayTitle = slotDisplayTitle(slot);
+
   const card = document.createElement('div');
   card.className = 'slot-card';
-  card.dataset.title = `${slotSummary(slot)} ${slot.characterName || ''}`.toLowerCase();
+  card.dataset.title = `${displayTitle} ${slot.characterName || ''}`.toLowerCase();
 
   const mine = isOwner(slot);
   if (mine && draggable) {
@@ -43,7 +49,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     slot.images.forEach((src) => {
       const frame = document.createElement('div');
       frame.className = 'frame';
-      frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(slotSummary(slot))}">`;
+      frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(displayTitle)}">`;
       carousel.appendChild(frame);
     });
   }
@@ -64,13 +70,22 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       e.stopPropagation();
       carousel.scrollBy({ left: carousel.clientWidth, behavior: 'smooth' });
     });
-    card.appendChild(prev);
-    card.appendChild(next);
+    carousel.appendChild(prev);
+    carousel.appendChild(next);
 
-    const count = document.createElement('div');
-    count.className = 'slot-count';
-    count.textContent = `${slot.images.length}장`;
-    card.appendChild(count);
+    const dots = document.createElement('div');
+    dots.className = 'carousel-dots';
+    const dotEls = slot.images.map((_, i) => {
+      const d = document.createElement('span');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      dots.appendChild(d);
+      return d;
+    });
+    carousel.addEventListener('scroll', () => {
+      const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+      dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+    });
+    card.appendChild(dots);
   }
 
   if (mine && onDelete) {
@@ -84,12 +99,12 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
         await onDelete(slot);
       }
     });
-    card.appendChild(del);
+    carousel.appendChild(del);
   }
 
   const label = document.createElement('div');
   label.className = 'slot-label';
-  label.textContent = slotSummary(slot);
+  label.textContent = displayTitle;
   card.appendChild(label);
 
   const tag = document.createElement('div');

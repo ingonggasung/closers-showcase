@@ -32,15 +32,31 @@ async function render() {
     return;
   }
   const owner = isOwner(currentSlot);
-  document.title = `${slotSummary(currentSlot)} - 클로저스 캐릭터 자랑`;
+  document.title = `${slotDisplayTitle(currentSlot)} - 클로저스 캐릭터 자랑`;
   ownerLine.textContent = `게시자: ${currentSlot.ownerName || '익명'}`;
 
-  const h1 = document.createElement('h1');
-  h1.className = 'slot-title-input';
-  h1.style.borderBottom = 'none';
-  h1.textContent = slotSummary(currentSlot);
   titleArea.innerHTML = '';
-  titleArea.appendChild(h1);
+  if (owner) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'slot-title-input';
+    input.maxLength = 60;
+    input.placeholder = '제목 (예: 여름 이벤트 코스튬)';
+    input.value = currentSlot.title || '';
+    input.addEventListener('change', async () => {
+      const title = input.value.trim();
+      await DB.updateSlot(slotId, { title });
+      currentSlot.title = title;
+      document.title = `${slotDisplayTitle(currentSlot)} - 클로저스 캐릭터 자랑`;
+    });
+    titleArea.appendChild(input);
+  } else {
+    const h1 = document.createElement('h1');
+    h1.className = 'slot-title-input';
+    h1.style.borderBottom = 'none';
+    h1.textContent = slotDisplayTitle(currentSlot);
+    titleArea.appendChild(h1);
+  }
 
   renderImages(owner);
   renderDetailPanel(owner);

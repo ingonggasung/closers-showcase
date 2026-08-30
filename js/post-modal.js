@@ -4,6 +4,7 @@
 const MAX_POST_IMAGES = 10;
 
 const postModal = document.getElementById('post-modal');
+const postTitleInput = document.getElementById('post-title');
 const postCharacterSelect = document.getElementById('post-character');
 const postImagesInput = document.getElementById('post-images');
 const postImagePreview = document.getElementById('post-image-preview');
@@ -27,6 +28,7 @@ const postSubmitBtn = document.getElementById('post-submit');
 const globalFab = document.getElementById('global-fab');
 
 function resetPostForm() {
+  postTitleInput.value = '';
   postImagesInput.value = '';
   postImagePreview.innerHTML = '';
   rebuildPostFields();
@@ -110,7 +112,8 @@ postSubmitBtn.addEventListener('click', async () => {
     PART_KEYS.forEach((k) => (parts[k] = postFields[k].value.trim()));
     const notes = postNotes.value.trim().slice(0, 200);
 
-    const newId = await DB.addSlot({ characterId, images, parts, notes });
+    const title = postTitleInput.value.trim();
+    const newId = await DB.addSlot({ characterId, title, images, parts, notes });
     closePostModal();
     location.href = `slot.html?id=${encodeURIComponent(newId)}&cid=${encodeURIComponent(characterId)}`;
   } catch (err) {
