@@ -9,11 +9,17 @@
 <body>
 
 <div class="page">
-  <a href="index.html" class="back-link">&larr; 캐릭터 목록</a>
+  <div class="top-bar">
+    <a href="index.html" class="back-link">&larr; 캐릭터 목록</a>
+    <div id="auth-bar"></div>
+  </div>
 
   <div class="char-title">
     <img id="char-icon" alt="" />
-    <h1 id="char-name">캐릭터</h1>
+    <div>
+      <h1 id="char-name">캐릭터</h1>
+      <div class="char-owner" id="char-owner"></div>
+    </div>
   </div>
 
   <div class="section-head">
@@ -38,6 +44,12 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/db.js"></script>
 <script src="js/dnd.js"></script>
 <script src="js/character.js"></script>

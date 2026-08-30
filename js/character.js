@@ -1,5 +1,5 @@
 const params = new URLSearchParams(location.search);
-const characterId = Number(params.get('id'));
+const characterId = params.get('id');
 
 if (!characterId) {
   location.href = 'index.html';
@@ -11,18 +11,22 @@ const slotTitleInput = document.getElementById('slot-title-input');
 const slotSearchInput = document.getElementById('slot-search');
 
 let suppressClick = false;
+let character = null;
+
+mountAuthBar(document.getElementById('auth-bar'));
 
 async function renderHeader() {
-  const c = await DB.getCharacter(characterId);
-  if (!c) {
+  character = await DB.getCharacter(characterId);
+  if (!character) {
     location.href = 'index.html';
     return;
   }
-  document.getElementById('char-name').textContent = c.name;
+  document.getElementById('char-name').textContent = character.name;
+  document.getElementById('char-owner').textContent = `by ${character.ownerName || '익명'}`;
   const icon = document.getElementById('char-icon');
-  icon.src = c.icon || '';
-  icon.style.display = c.icon ? 'block' : 'none';
-  document.title = `${c.name} - 클로저스 캐릭터 자랑`;
+  icon.src = character.icon || '';
+  icon.style.display = character.icon ? 'block' : 'none';
+  document.title = `${character.name} - 클로저스 캐릭터 자랑`;
 }
 
 function buildCarousel(slot) {
@@ -40,7 +44,7 @@ function buildCarousel(slot) {
   slot.images.forEach((src) => {
     const frame = document.createElement('div');
     frame.className = 'frame';
-    frame.innerHTML = `<img src="${src}" alt="${slot.title}">`;
+    frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(slot.title)}">`;
     wrap.appendChild(frame);
   });
 
@@ -49,16 +53,20 @@ function buildCarousel(slot) {
 
 async function render() {
   await renderHeader();
+  const owner = isOwner(character);
   const slots = await DB.getSlotsByCharacter(characterId);
   slotGrid.innerHTML = '';
 
   slots.forEach((slot) => {
     const card = document.createElement('div');
     card.className = 'slot-card';
-    card.dataset.role = 'item';
-    card.dataset.id = slot.id;
     card.dataset.title = (slot.title || '').toLowerCase();
-    card.draggable = true;
+
+    if (owner) {
+      card.dataset.role = 'item';
+      card.dataset.id = slot.id;
+      card.draggable = true;
+    }
 
     const carousel = buildCarousel(slot);
     card.appendChild(carousel);
@@ -87,18 +95,20 @@ async function render() {
       card.appendChild(count);
     }
 
-    const del = document.createElement('button');
-    del.className = 'slot-del';
-    del.textContent = '×';
-    del.title = '삭제';
-    del.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (confirm(`"${slot.title || '이 세트'}"를 삭제할까요?`)) {
-        await DB.deleteSlot(slot.id);
-        render();
-      }
-    });
-    card.appendChild(del);
+    if (owner) {
+      const del = document.createElement('button');
+      del.className = 'slot-del';
+      del.textContent = '×';
+      del.title = '삭제';
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm(`"${slot.title || '이 세트'}"를 삭제할까요?`)) {
+          await DB.deleteSlot(slot.id);
+          render();
+        }
+      });
+      card.appendChild(del);
+    }
 
     const label = document.createElement('div');
     label.className = 'slot-label';
@@ -107,31 +117,33 @@ async function render() {
 
     card.addEventListener('click', () => {
       if (suppressClick) return;
-      location.href = `slot.html?id=${slot.id}&cid=${characterId}`;
+      location.href = `slot.html?id=${encodeURIComponent(slot.id)}&cid=${encodeURIComponent(characterId)}`;
     });
 
     slotGrid.appendChild(card);
   });
 
-  const addCard = document.createElement('div');
-  addCard.className = 'slot-card add-slot';
-  addCard.innerHTML = `<span class="plus">+</span><span>세트 추가</span>`;
-  addCard.addEventListener('click', openSlotModal);
-  slotGrid.appendChild(addCard);
+  if (owner) {
+    const addCard = document.createElement('div');
+    addCard.className = 'slot-card add-slot';
+    addCard.innerHTML = `<span class="plus">+</span><span>세트 추가</span>`;
+    addCard.addEventListener('click', openSlotModal);
+    slotGrid.appendChild(addCard);
+  }
 
   applySlotFilter();
 }
 
 function applySlotFilter() {
   const q = slotSearchInput.value.trim().toLowerCase();
-  slotGrid.querySelectorAll('[data-role="item"]').forEach((card) => {
+  slotGrid.querySelectorAll('.slot-card:not(.add-slot)').forEach((card) => {
     card.hidden = q.length > 0 && !card.dataset.title.includes(q);
   });
 }
 
 enableDragReorder(slotGrid, '[data-role="item"]', async () => {
-  const ids = Array.from(slotGrid.querySelectorAll('[data-role="item"]')).map((el) =>
-    Number(el.dataset.id)
+  const ids = Array.from(slotGrid.querySelectorAll('[data-role="item"]')).map(
+    (el) => el.dataset.id
   );
   await DB.reorderSlots(ids);
 });
@@ -163,7 +175,19 @@ document.getElementById('slot-save').addEventListener('click', async () => {
   const title = slotTitleInput.value.trim();
   const newId = await DB.addSlot({ characterId, title, images: [], description: '' });
   closeSlotModal();
-  location.href = `slot.html?id=${newId}&cid=${characterId}`;
+  location.href = `slot.html?id=${encodeURIComponent(newId)}&cid=${encodeURIComponent(characterId)}`;
 });
 
-render();
+function showLoadError() {
+  slotGrid.innerHTML =
+    '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
+}
+
+authReady.then(render).catch((err) => {
+  console.error(err);
+  showLoadError();
+});
+onAuthChange(() => render().catch((err) => {
+  console.error(err);
+  showLoadError();
+}));

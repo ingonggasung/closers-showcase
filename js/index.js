@@ -5,8 +5,9 @@ const iconInput = document.getElementById('char-icon-input');
 const iconPreview = document.getElementById('char-icon-preview');
 const searchInput = document.getElementById('char-search');
 
-let pendingIconDataURL = null;
-let suppressClick = false;
+let pendingIconFile = null;
+
+mountAuthBar(document.getElementById('auth-bar'));
 
 async function render() {
   const characters = await DB.getCharacters();
@@ -15,43 +16,44 @@ async function render() {
   characters.forEach((c) => {
     const tile = document.createElement('div');
     tile.className = 'char-tile';
-    tile.dataset.role = 'item';
-    tile.dataset.id = c.id;
     tile.dataset.name = (c.name || '').toLowerCase();
-    tile.draggable = true;
     tile.innerHTML = `
-      <a href="character.html?id=${c.id}" class="char-avatar">
-        ${c.icon ? `<img src="${c.icon}" alt="${c.name}">` : (c.name || '?').slice(0, 1)}
+      <a href="character.html?id=${encodeURIComponent(c.id)}" class="char-avatar">
+        ${c.icon ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}">` : escapeHtml((c.name || '?').slice(0, 1))}
       </a>
-      <div class="char-name">${c.name || '이름없음'}</div>
-      <button class="char-del" title="삭제">×</button>
+      <div class="char-name">${escapeHtml(c.name || '이름없음')}</div>
+      <div class="char-owner">by ${escapeHtml(c.ownerName || '익명')}</div>
+      ${isOwner(c) ? '<button class="char-del" title="삭제">×</button>' : ''}
     `;
-    tile.querySelector('.char-avatar').addEventListener('click', (e) => {
-      if (suppressClick) e.preventDefault();
-    });
-    tile.querySelector('.char-del').addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (confirm(`"${c.name}" 캐릭터와 등록된 코스튬을 모두 삭제할까요?`)) {
-        await DB.deleteCharacter(c.id);
-        render();
-      }
-    });
+    if (isOwner(c)) {
+      tile.querySelector('.char-del').addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm(`"${c.name}" 캐릭터와 등록된 코스튬을 모두 삭제할까요?`)) {
+          await DB.deleteCharacter(c.id);
+          render();
+        }
+      });
+    }
     grid.appendChild(tile);
   });
 
-  const addTile = document.createElement('div');
-  addTile.className = 'char-tile add-tile';
-  addTile.innerHTML = `<div class="char-avatar"><span class="plus">+</span></div><div class="char-name">추가</div>`;
-  addTile.addEventListener('click', openModal);
-  grid.appendChild(addTile);
+  if (currentUser) {
+    const addTile = document.createElement('div');
+    addTile.className = 'char-tile add-tile';
+    addTile.innerHTML = `<div class="char-avatar"><span class="plus">+</span></div><div class="char-name">추가</div>`;
+    addTile.addEventListener('click', openModal);
+    grid.appendChild(addTile);
+  }
 
   if (characters.length === 0) {
     const hint = document.createElement('div');
     hint.className = 'empty-hint';
     hint.style.gridColumn = '1 / -1';
-    hint.textContent = '등록된 캐릭터가 없어요. + 를 눌러 캐릭터를 추가해보세요.';
-    grid.insertBefore(hint, addTile);
+    hint.textContent = currentUser
+      ? '등록된 캐릭터가 없어요. + 를 눌러 캐릭터를 추가해보세요.'
+      : '등록된 캐릭터가 없어요. 로그인하면 캐릭터를 등록할 수 있어요.';
+    grid.insertBefore(hint, grid.firstChild);
   }
 
   applyFilter();
@@ -59,24 +61,10 @@ async function render() {
 
 function applyFilter() {
   const q = searchInput.value.trim().toLowerCase();
-  grid.querySelectorAll('[data-role="item"]').forEach((tile) => {
+  grid.querySelectorAll('.char-tile:not(.add-tile)').forEach((tile) => {
     tile.hidden = q.length > 0 && !tile.dataset.name.includes(q);
   });
 }
-
-enableDragReorder(grid, '[data-role="item"]', async () => {
-  const ids = Array.from(grid.querySelectorAll('[data-role="item"]')).map((el) =>
-    Number(el.dataset.id)
-  );
-  await DB.reorderCharacters(ids);
-});
-
-grid.addEventListener('dragstart', (e) => {
-  if (e.target.closest('[data-role="item"]')) suppressClick = true;
-});
-grid.addEventListener('dragend', () => {
-  setTimeout(() => (suppressClick = false), 0);
-});
 
 searchInput.addEventListener('input', applyFilter);
 
@@ -85,7 +73,7 @@ function openModal() {
   iconInput.value = '';
   iconPreview.src = '';
   iconPreview.classList.remove('show');
-  pendingIconDataURL = null;
+  pendingIconFile = null;
   modal.hidden = false;
   nameInput.focus();
 }
@@ -94,12 +82,16 @@ function closeModal() {
   modal.hidden = true;
 }
 
-iconInput.addEventListener('change', async () => {
+iconInput.addEventListener('change', () => {
   const file = iconInput.files[0];
   if (!file) return;
-  pendingIconDataURL = await fileToDataURL(file);
-  iconPreview.src = pendingIconDataURL;
-  iconPreview.classList.add('show');
+  pendingIconFile = file;
+  const reader = new FileReader();
+  reader.onload = () => {
+    iconPreview.src = reader.result;
+    iconPreview.classList.add('show');
+  };
+  reader.readAsDataURL(file);
 });
 
 document.getElementById('char-cancel').addEventListener('click', closeModal);
@@ -113,9 +105,23 @@ document.getElementById('char-save').addEventListener('click', async () => {
     nameInput.focus();
     return;
   }
-  await DB.addCharacter({ name, icon: pendingIconDataURL });
-  closeModal();
-  render();
+  const saveBtn = document.getElementById('char-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '추가 중...';
+  try {
+    let iconUrl = null;
+    if (pendingIconFile) {
+      iconUrl = await uploadImageToCloudinary(pendingIconFile);
+    }
+    await DB.addCharacter({ name, icon: iconUrl });
+    closeModal();
+    render();
+  } catch (err) {
+    alert('캐릭터 추가에 실패했습니다: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '추가';
+  }
 });
 
 document.getElementById('reset-char').addEventListener('click', () => {
@@ -123,14 +129,16 @@ document.getElementById('reset-char').addEventListener('click', () => {
   applyFilter();
 });
 
-document.getElementById('reset-all').addEventListener('click', async () => {
-  if (confirm('등록된 모든 캐릭터와 코스튬 데이터를 삭제할까요? 되돌릴 수 없습니다.')) {
-    const characters = await DB.getCharacters();
-    for (const c of characters) {
-      await DB.deleteCharacter(c.id);
-    }
-    render();
-  }
-});
+function showLoadError() {
+  grid.innerHTML =
+    '<div class="empty-hint" style="grid-column:1/-1">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
+}
 
-render();
+authReady.then(render).catch((err) => {
+  console.error(err);
+  showLoadError();
+});
+onAuthChange(() => render().catch((err) => {
+  console.error(err);
+  showLoadError();
+}));

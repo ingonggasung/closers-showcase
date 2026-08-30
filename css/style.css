@@ -91,6 +91,35 @@ button {
 }
 .search-input::placeholder { color: var(--text-dim); }
 .search-input:focus { outline: none; border-color: var(--accent); }
+
+/* ---------- Auth bar ---------- */
+#auth-bar { display: flex; align-items: center; }
+.auth-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.auth-name {
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.description-view {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -163,6 +192,22 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.char-owner {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: .75;
+  max-width: 72px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.char-title .char-owner {
+  max-width: none;
+  text-align: left;
+  font-size: 12px;
+  margin-top: 2px;
 }
 .char-del {
   position: absolute;

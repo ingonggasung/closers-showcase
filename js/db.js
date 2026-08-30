@@ -1,129 +1,86 @@
-// IndexedDB wrapper for Closers Showcase
-// Stores: characters {id, name, icon(dataURL), order}
-//         slots {id, characterId, title, images: [dataURL...] (max 10), description, order}
+// Firestore-backed data layer for Closers Showcase.
+// Collections:
+//   characters: { name, icon(Cloudinary URL), ownerId, ownerName, createdAt }
+//   slots:      { characterId, ownerId, title, images[](max 10), description, order, createdAt }
 
-const DB_NAME = 'closers-showcase';
-const DB_VERSION = 1;
-let dbPromise = null;
-
-function openDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('characters')) {
-        const store = db.createObjectStore('characters', { keyPath: 'id', autoIncrement: true });
-        store.createIndex('order', 'order');
-      }
-      if (!db.objectStoreNames.contains('slots')) {
-        const store = db.createObjectStore('slots', { keyPath: 'id', autoIncrement: true });
-        store.createIndex('characterId', 'characterId');
-        store.createIndex('order', 'order');
-      }
-    };
-    req.onsuccess = (e) => resolve(e.target.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-  return dbPromise;
-}
-
-function tx(storeName, mode) {
-  return openDB().then((db) => db.transaction(storeName, mode).objectStore(storeName));
-}
-
-function reqToPromise(req) {
-  return new Promise((resolve, reject) => {
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+function docToObj(doc) {
+  return { id: doc.id, ...doc.data() };
 }
 
 const DB = {
   async addCharacter({ name, icon }) {
-    const store = await tx('characters', 'readwrite');
-    const count = await reqToPromise(store.count());
-    return reqToPromise(store.add({ name, icon, order: count }));
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    const ref = await firestore.collection('characters').add({
+      name,
+      icon: icon || null,
+      ownerId: currentUser.uid,
+      ownerName: currentUser.displayName || currentUser.email || '사용자',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return ref.id;
   },
 
   async getCharacters() {
-    const store = await tx('characters', 'readonly');
-    const all = await reqToPromise(store.getAll());
-    return all.sort((a, b) => a.order - b.order);
+    const snap = await firestore.collection('characters').orderBy('createdAt', 'desc').get();
+    return snap.docs.map(docToObj);
   },
 
   async getCharacter(id) {
-    const store = await tx('characters', 'readonly');
-    return reqToPromise(store.get(id));
-  },
-
-  async reorderCharacters(orderedIds) {
-    const store = await tx('characters', 'readwrite');
-    for (let i = 0; i < orderedIds.length; i++) {
-      const rec = await reqToPromise(store.get(orderedIds[i]));
-      if (!rec) continue;
-      rec.order = i;
-      await reqToPromise(store.put(rec));
-    }
+    const doc = await firestore.collection('characters').doc(id).get();
+    return doc.exists ? docToObj(doc) : null;
   },
 
   async deleteCharacter(id) {
-    const slotStore = await tx('slots', 'readwrite');
-    const idx = slotStore.index('characterId');
-    const slots = await reqToPromise(idx.getAll(IDBKeyRange.only(id)));
-    await Promise.all(slots.map((s) => reqToPromise(slotStore.delete(s.id))));
-    const charStore = await tx('characters', 'readwrite');
-    return reqToPromise(charStore.delete(id));
+    const slotsSnap = await firestore.collection('slots').where('characterId', '==', id).get();
+    const batch = firestore.batch();
+    slotsSnap.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(firestore.collection('characters').doc(id));
+    await batch.commit();
   },
 
   async addSlot({ characterId, title, images, description }) {
-    const store = await tx('slots', 'readwrite');
-    const idx = store.index('characterId');
-    const existing = await reqToPromise(idx.getAll(IDBKeyRange.only(characterId)));
-    return reqToPromise(
-      store.add({
-        characterId,
-        title: title || '',
-        images: images || [],
-        description: description || '',
-        order: existing.length,
-      })
-    );
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    const existing = await firestore
+      .collection('slots')
+      .where('characterId', '==', characterId)
+      .get();
+    const ref = await firestore.collection('slots').add({
+      characterId,
+      ownerId: currentUser.uid,
+      ownerName: currentUser.displayName || currentUser.email || '사용자',
+      title: title || '',
+      images: images || [],
+      description: description || '',
+      order: existing.size,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return ref.id;
   },
 
   async getSlotsByCharacter(characterId) {
-    const store = await tx('slots', 'readonly');
-    const idx = store.index('characterId');
-    const all = await reqToPromise(idx.getAll(IDBKeyRange.only(characterId)));
-    return all.sort((a, b) => a.order - b.order);
+    const snap = await firestore.collection('slots').where('characterId', '==', characterId).get();
+    return snap.docs.map(docToObj).sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 
   async getSlot(id) {
-    const store = await tx('slots', 'readonly');
-    return reqToPromise(store.get(id));
+    const doc = await firestore.collection('slots').doc(id).get();
+    return doc.exists ? docToObj(doc) : null;
   },
 
   async updateSlot(id, changes) {
-    const store = await tx('slots', 'readwrite');
-    const slot = await reqToPromise(store.get(id));
-    if (!slot) return;
-    Object.assign(slot, changes);
-    return reqToPromise(store.put(slot));
-  },
-
-  async reorderSlots(orderedIds) {
-    const store = await tx('slots', 'readwrite');
-    for (let i = 0; i < orderedIds.length; i++) {
-      const rec = await reqToPromise(store.get(orderedIds[i]));
-      if (!rec) continue;
-      rec.order = i;
-      await reqToPromise(store.put(rec));
-    }
+    await firestore.collection('slots').doc(id).update(changes);
   },
 
   async deleteSlot(id) {
-    const store = await tx('slots', 'readwrite');
-    return reqToPromise(store.delete(id));
+    await firestore.collection('slots').doc(id).delete();
+  },
+
+  async reorderSlots(orderedIds) {
+    const batch = firestore.batch();
+    orderedIds.forEach((id, i) => {
+      batch.update(firestore.collection('slots').doc(id), { order: i });
+    });
+    await batch.commit();
   },
 };
 
