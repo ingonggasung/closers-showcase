@@ -7,14 +7,20 @@ const postModal = document.getElementById('post-modal');
 const postCharacterSelect = document.getElementById('post-character');
 const postImagesInput = document.getElementById('post-images');
 const postImagePreview = document.getElementById('post-image-preview');
-const postFields = {
-  hair: document.getElementById('post-hair'),
-  lens: document.getElementById('post-lens'),
-  top: document.getElementById('post-top'),
-  bottom: document.getElementById('post-bottom'),
-  shoes: document.getElementById('post-shoes'),
-  gloves: document.getElementById('post-gloves'),
-};
+const postCostumeContainer = document.getElementById('post-costume-fields');
+const postAccessoryContainer = document.getElementById('post-accessory-fields');
+let postFields = {};
+
+function rebuildPostFields() {
+  const costume = buildPartsFieldGrid(COSTUME_KEYS);
+  const accessory = buildPartsFieldGrid(ACCESSORY_KEYS);
+  postCostumeContainer.innerHTML = '';
+  postCostumeContainer.appendChild(costume.el);
+  postAccessoryContainer.innerHTML = '';
+  postAccessoryContainer.appendChild(accessory.el);
+  postFields = { ...costume.inputs, ...accessory.inputs };
+}
+
 const postNotes = document.getElementById('post-notes');
 const postNotesCount = document.getElementById('post-notes-count');
 const postSubmitBtn = document.getElementById('post-submit');
@@ -23,7 +29,7 @@ const globalFab = document.getElementById('global-fab');
 function resetPostForm() {
   postImagesInput.value = '';
   postImagePreview.innerHTML = '';
-  PART_KEYS.forEach((k) => (postFields[k].value = ''));
+  rebuildPostFields();
   postNotes.value = '';
   postNotesCount.textContent = '0/200';
 }

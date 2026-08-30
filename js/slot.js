@@ -121,23 +121,19 @@ function renderDetailPanel(owner) {
   const parts = currentSlot.parts || {};
 
   if (owner) {
-    const grid = document.createElement('div');
-    grid.className = 'post-parts-grid';
-    const fieldInputs = {};
-    PART_KEYS.forEach((key) => {
-      const wrap = document.createElement('div');
-      const label = document.createElement('label');
-      label.textContent = PART_LABELS[key];
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.maxLength = 60;
-      input.value = parts[key] || '';
-      fieldInputs[key] = input;
-      wrap.appendChild(label);
-      wrap.appendChild(input);
-      grid.appendChild(wrap);
-    });
-    detailPanel.appendChild(grid);
+    const costume = buildPartsFieldGrid(COSTUME_KEYS, parts);
+    const accessory = buildPartsFieldGrid(ACCESSORY_KEYS, parts);
+    const fieldInputs = { ...costume.inputs, ...accessory.inputs };
+
+    const costumeLabel = document.createElement('label');
+    costumeLabel.textContent = '코스튬';
+    detailPanel.appendChild(costumeLabel);
+    detailPanel.appendChild(costume.el);
+
+    const accessoryLabel = document.createElement('label');
+    accessoryLabel.textContent = '악세서리';
+    detailPanel.appendChild(accessoryLabel);
+    detailPanel.appendChild(accessory.el);
 
     const notesLabelRow = document.createElement('div');
     notesLabelRow.className = 'field-label-row';
@@ -177,11 +173,10 @@ function renderDetailPanel(owner) {
     saveRow.appendChild(saveBtn);
     detailPanel.appendChild(saveRow);
   } else {
-    const grid = document.createElement('div');
-    grid.className = 'parts-grid';
-    const anyPart = PART_KEYS.some((k) => parts[k]);
-    if (anyPart) {
-      PART_KEYS.forEach((key) => {
+    function buildPartsView(keys) {
+      const grid = document.createElement('div');
+      grid.className = 'parts-grid';
+      keys.forEach((key) => {
         if (!parts[key]) return;
         const p = document.createElement('div');
         p.className = 'part';
@@ -195,13 +190,29 @@ function renderDetailPanel(owner) {
         p.appendChild(v);
         grid.appendChild(p);
       });
+      return grid;
+    }
+
+    const anyPart = PART_KEYS.some((k) => parts[k]);
+    if (anyPart) {
+      if (COSTUME_KEYS.some((k) => parts[k])) {
+        const costumeLabel = document.createElement('label');
+        costumeLabel.textContent = '코스튬';
+        detailPanel.appendChild(costumeLabel);
+        detailPanel.appendChild(buildPartsView(COSTUME_KEYS));
+      }
+      if (ACCESSORY_KEYS.some((k) => parts[k])) {
+        const accessoryLabel = document.createElement('label');
+        accessoryLabel.textContent = '악세서리';
+        detailPanel.appendChild(accessoryLabel);
+        detailPanel.appendChild(buildPartsView(ACCESSORY_KEYS));
+      }
     } else {
       const empty = document.createElement('div');
       empty.className = 'empty-hint';
       empty.textContent = '등록된 코스튬 정보가 없어요.';
-      grid.appendChild(empty);
+      detailPanel.appendChild(empty);
     }
-    detailPanel.appendChild(grid);
 
     if (currentSlot.notes) {
       const notesView = document.createElement('div');
