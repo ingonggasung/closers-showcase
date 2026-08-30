@@ -6,14 +6,16 @@ if (!characterId) {
 }
 
 const slotGrid = document.getElementById('slot-grid');
-const slotModal = document.getElementById('slot-modal');
-const slotTitleInput = document.getElementById('slot-title-input');
 const slotSearchInput = document.getElementById('slot-search');
 
 let suppressClick = false;
 let character = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
+
+document
+  .getElementById('global-fab')
+  .addEventListener('click', () => openPostModal(characterId));
 
 async function renderHeader() {
   character = await DB.getCharacter(characterId);
@@ -44,7 +46,7 @@ function buildCarousel(slot) {
   slot.images.forEach((src) => {
     const frame = document.createElement('div');
     frame.className = 'frame';
-    frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(slot.title)}">`;
+    frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(slotSummary(slot))}">`;
     wrap.appendChild(frame);
   });
 
@@ -53,16 +55,17 @@ function buildCarousel(slot) {
 
 async function render() {
   await renderHeader();
-  const owner = isOwner(character);
+  const canPost = !!currentUser;
   const slots = await DB.getSlotsByCharacter(characterId);
   slotGrid.innerHTML = '';
 
   slots.forEach((slot) => {
     const card = document.createElement('div');
     card.className = 'slot-card';
-    card.dataset.title = (slot.title || '').toLowerCase();
+    card.dataset.title = slotSummary(slot).toLowerCase();
 
-    if (owner) {
+    const mine = isOwner(slot);
+    if (mine) {
       card.dataset.role = 'item';
       card.dataset.id = slot.id;
       card.draggable = true;
@@ -95,14 +98,14 @@ async function render() {
       card.appendChild(count);
     }
 
-    if (owner) {
+    if (mine) {
       const del = document.createElement('button');
       del.className = 'slot-del';
       del.textContent = '×';
       del.title = '삭제';
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm(`"${slot.title || '이 세트'}"를 삭제할까요?`)) {
+        if (confirm('이 게시글을 삭제할까요?')) {
           await DB.deleteSlot(slot.id);
           render();
         }
@@ -112,8 +115,13 @@ async function render() {
 
     const label = document.createElement('div');
     label.className = 'slot-label';
-    label.textContent = slot.title || '(이름 없음)';
+    label.textContent = slotSummary(slot);
     card.appendChild(label);
+
+    const ownerTag = document.createElement('div');
+    ownerTag.className = 'slot-owner-tag';
+    ownerTag.textContent = `by ${slot.ownerName || '익명'}`;
+    card.appendChild(ownerTag);
 
     card.addEventListener('click', () => {
       if (suppressClick) return;
@@ -123,11 +131,11 @@ async function render() {
     slotGrid.appendChild(card);
   });
 
-  if (owner) {
+  if (canPost) {
     const addCard = document.createElement('div');
     addCard.className = 'slot-card add-slot';
-    addCard.innerHTML = `<span class="plus">+</span><span>세트 추가</span>`;
-    addCard.addEventListener('click', openSlotModal);
+    addCard.innerHTML = `<span class="plus">+</span><span>코스튬 등록</span>`;
+    addCard.addEventListener('click', () => openPostModal(characterId));
     slotGrid.appendChild(addCard);
   }
 
@@ -156,27 +164,6 @@ slotGrid.addEventListener('dragend', () => {
 });
 
 slotSearchInput.addEventListener('input', applySlotFilter);
-
-function openSlotModal() {
-  slotTitleInput.value = '';
-  slotModal.hidden = false;
-  slotTitleInput.focus();
-}
-function closeSlotModal() {
-  slotModal.hidden = true;
-}
-
-document.getElementById('slot-cancel').addEventListener('click', closeSlotModal);
-slotModal.addEventListener('click', (e) => {
-  if (e.target === slotModal) closeSlotModal();
-});
-
-document.getElementById('slot-save').addEventListener('click', async () => {
-  const title = slotTitleInput.value.trim();
-  const newId = await DB.addSlot({ characterId, title, images: [], description: '' });
-  closeSlotModal();
-  location.href = `slot.html?id=${encodeURIComponent(newId)}&cid=${encodeURIComponent(characterId)}`;
-});
 
 function showLoadError() {
   slotGrid.innerHTML =

@@ -120,6 +120,129 @@ button {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ---------- Floating add-post button + modal ---------- */
+.fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 28px;
+  line-height: 56px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
+  z-index: 40;
+}
+.fab:hover { background: #ff5b93; }
+.fab[hidden] { display: none; }
+
+.modal-box-wide {
+  width: min(92vw, 480px);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.modal-box select {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+.modal-box textarea {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.field-label-row span {
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.post-image-preview {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0 2px;
+}
+.post-image-preview img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.post-parts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin: 12px 0;
+}
+.post-parts-grid label {
+  margin: 0 0 4px;
+}
+.post-parts-grid input[type="text"] {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* ---------- Costume parts display (slot detail) ---------- */
+.parts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+.parts-grid .part {
+  font-size: 13px;
+}
+.parts-grid .part .k {
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+.parts-grid .part .v {
+  color: var(--text);
+  font-weight: 600;
+}
+.notes-view {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+.slot-owner-tag {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: .8;
+  padding: 0 10px 6px;
+  margin-top: -8px;
+}
 .back-link {
   display: inline-flex;
   align-items: center;

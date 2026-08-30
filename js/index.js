@@ -9,6 +9,12 @@ let pendingIconFile = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
 
+function isAdmin() {
+  return !!currentUser && currentUser.email === ADMIN_EMAIL;
+}
+
+document.getElementById('global-fab').addEventListener('click', () => openPostModal());
+
 async function render() {
   const characters = await DB.getCharacters();
   grid.innerHTML = '';
@@ -23,9 +29,9 @@ async function render() {
       </a>
       <div class="char-name">${escapeHtml(c.name || '이름없음')}</div>
       <div class="char-owner">by ${escapeHtml(c.ownerName || '익명')}</div>
-      ${isOwner(c) ? '<button class="char-del" title="삭제">×</button>' : ''}
+      ${isAdmin() ? '<button class="char-del" title="삭제">×</button>' : ''}
     `;
-    if (isOwner(c)) {
+    if (isAdmin()) {
       tile.querySelector('.char-del').addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -38,7 +44,7 @@ async function render() {
     grid.appendChild(tile);
   });
 
-  if (currentUser) {
+  if (isAdmin()) {
     const addTile = document.createElement('div');
     addTile.className = 'char-tile add-tile';
     addTile.innerHTML = `<div class="char-avatar"><span class="plus">+</span></div><div class="char-name">추가</div>`;
@@ -50,9 +56,9 @@ async function render() {
     const hint = document.createElement('div');
     hint.className = 'empty-hint';
     hint.style.gridColumn = '1 / -1';
-    hint.textContent = currentUser
+    hint.textContent = isAdmin()
       ? '등록된 캐릭터가 없어요. + 를 눌러 캐릭터를 추가해보세요.'
-      : '등록된 캐릭터가 없어요. 로그인하면 캐릭터를 등록할 수 있어요.';
+      : '등록된 캐릭터가 없어요. 관리자가 캐릭터를 등록하면 여기에 표시됩니다.';
     grid.insertBefore(hint, grid.firstChild);
   }
 

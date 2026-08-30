@@ -21,6 +21,10 @@ let currentSlot = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
 
+document.getElementById('global-fab').addEventListener('click', () => {
+  openPostModal(currentSlot ? currentSlot.characterId : characterId);
+});
+
 async function render() {
   currentSlot = await DB.getSlot(slotId);
   if (!currentSlot) {
@@ -28,35 +32,18 @@ async function render() {
     return;
   }
   const owner = isOwner(currentSlot);
-  document.title = `${currentSlot.title || '코스튬'} - 클로저스 캐릭터 자랑`;
+  document.title = `${slotSummary(currentSlot)} - 클로저스 캐릭터 자랑`;
   ownerLine.textContent = `게시자: ${currentSlot.ownerName || '익명'}`;
 
-  renderTitle(owner);
+  const h1 = document.createElement('h1');
+  h1.className = 'slot-title-input';
+  h1.style.borderBottom = 'none';
+  h1.textContent = slotSummary(currentSlot);
+  titleArea.innerHTML = '';
+  titleArea.appendChild(h1);
+
   renderImages(owner);
   renderDetailPanel(owner);
-}
-
-function renderTitle(owner) {
-  titleArea.innerHTML = '';
-  if (owner) {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'slot-title-input';
-    input.placeholder = '세트 이름';
-    input.value = currentSlot.title || '';
-    input.addEventListener('change', async () => {
-      const title = input.value.trim();
-      await DB.updateSlot(slotId, { title });
-      currentSlot.title = title;
-    });
-    titleArea.appendChild(input);
-  } else {
-    const h1 = document.createElement('h1');
-    h1.className = 'slot-title-input';
-    h1.style.borderBottom = 'none';
-    h1.textContent = currentSlot.title || '(이름 없음)';
-    titleArea.appendChild(h1);
-  }
 }
 
 function renderImages(owner) {
@@ -131,19 +118,45 @@ imageInput.addEventListener('change', async () => {
 
 function renderDetailPanel(owner) {
   detailPanel.innerHTML = '';
-  const label = document.createElement('label');
-  label.textContent = owner
-    ? '어떤 코스튬을 착용했는지 자유롭게 적어주세요 (예: 상의, 하의, 헤어, 악세서리 등)'
-    : '코스튬 상세 정보';
-  detailPanel.appendChild(label);
+  const parts = currentSlot.parts || {};
 
   if (owner) {
-    const textarea = document.createElement('textarea');
-    textarea.id = 'description';
-    textarea.placeholder =
-      '예) 상의: 여름 이벤트 셔츠\n하의: 화이트 스커트\n헤어: 기본 헤어 + 리본 악세서리';
-    textarea.value = currentSlot.description || '';
-    detailPanel.appendChild(textarea);
+    const grid = document.createElement('div');
+    grid.className = 'post-parts-grid';
+    const fieldInputs = {};
+    PART_KEYS.forEach((key) => {
+      const wrap = document.createElement('div');
+      const label = document.createElement('label');
+      label.textContent = PART_LABELS[key];
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 60;
+      input.value = parts[key] || '';
+      fieldInputs[key] = input;
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      grid.appendChild(wrap);
+    });
+    detailPanel.appendChild(grid);
+
+    const notesLabelRow = document.createElement('div');
+    notesLabelRow.className = 'field-label-row';
+    const notesLabel = document.createElement('label');
+    notesLabel.textContent = '메모 (염색 코드 등)';
+    const notesCount = document.createElement('span');
+    notesCount.textContent = `${(currentSlot.notes || '').length}/200`;
+    notesLabelRow.appendChild(notesLabel);
+    notesLabelRow.appendChild(notesCount);
+    detailPanel.appendChild(notesLabelRow);
+
+    const notesArea = document.createElement('textarea');
+    notesArea.maxLength = 200;
+    notesArea.rows = 3;
+    notesArea.value = currentSlot.notes || '';
+    notesArea.addEventListener('input', () => {
+      notesCount.textContent = `${notesArea.value.length}/200`;
+    });
+    detailPanel.appendChild(notesArea);
 
     const saveRow = document.createElement('div');
     saveRow.className = 'save-row';
@@ -151,9 +164,12 @@ function renderDetailPanel(owner) {
     saveBtn.className = 'pill accent';
     saveBtn.textContent = '저장';
     saveBtn.addEventListener('click', async () => {
-      const description = textarea.value;
-      await DB.updateSlot(slotId, { description });
-      currentSlot.description = description;
+      const newParts = {};
+      PART_KEYS.forEach((key) => (newParts[key] = fieldInputs[key].value.trim()));
+      const notes = notesArea.value.trim().slice(0, 200);
+      await DB.updateSlot(slotId, { parts: newParts, notes });
+      currentSlot.parts = newParts;
+      currentSlot.notes = notes;
       const original = saveBtn.textContent;
       saveBtn.textContent = '저장됨';
       setTimeout(() => (saveBtn.textContent = original), 1000);
@@ -161,10 +177,38 @@ function renderDetailPanel(owner) {
     saveRow.appendChild(saveBtn);
     detailPanel.appendChild(saveRow);
   } else {
-    const view = document.createElement('div');
-    view.className = 'description-view';
-    view.textContent = currentSlot.description || '작성된 설명이 없습니다.';
-    detailPanel.appendChild(view);
+    const grid = document.createElement('div');
+    grid.className = 'parts-grid';
+    const anyPart = PART_KEYS.some((k) => parts[k]);
+    if (anyPart) {
+      PART_KEYS.forEach((key) => {
+        if (!parts[key]) return;
+        const p = document.createElement('div');
+        p.className = 'part';
+        const k = document.createElement('span');
+        k.className = 'k';
+        k.textContent = `${PART_LABELS[key]}:`;
+        const v = document.createElement('span');
+        v.className = 'v';
+        v.textContent = parts[key];
+        p.appendChild(k);
+        p.appendChild(v);
+        grid.appendChild(p);
+      });
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'empty-hint';
+      empty.textContent = '등록된 코스튬 정보가 없어요.';
+      grid.appendChild(empty);
+    }
+    detailPanel.appendChild(grid);
+
+    if (currentSlot.notes) {
+      const notesView = document.createElement('div');
+      notesView.className = 'notes-view';
+      notesView.textContent = currentSlot.notes;
+      detailPanel.appendChild(notesView);
+    }
   }
 }
 

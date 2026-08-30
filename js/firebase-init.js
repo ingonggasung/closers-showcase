@@ -12,6 +12,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const firestore = firebase.firestore();
 
+// Only this account may create/edit/delete the base character roster.
+const ADMIN_EMAIL = 'tnals1870@gmail.com';
+
 // Cloudinary unsigned upload (no API secret needed/used client-side).
 const CLOUDINARY_CLOUD_NAME = 'jt919jxx';
 const CLOUDINARY_UPLOAD_PRESET = 'closers-showcase';

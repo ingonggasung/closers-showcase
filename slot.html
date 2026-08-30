@@ -29,6 +29,41 @@
   <div class="detail-panel" id="detail-panel"></div>
 </div>
 
+<div class="modal-overlay" id="post-modal" hidden>
+  <div class="modal-box modal-box-wide">
+    <h3>코스튬 등록</h3>
+
+    <label>캐릭터 선택</label>
+    <select id="post-character"></select>
+
+    <label>사진 (최대 10장)</label>
+    <input type="file" id="post-images" accept="image/*" multiple />
+    <div class="post-image-preview" id="post-image-preview"></div>
+
+    <div class="post-parts-grid">
+      <div><label>헤어</label><input type="text" id="post-hair" maxlength="60" /></div>
+      <div><label>렌즈</label><input type="text" id="post-lens" maxlength="60" /></div>
+      <div><label>상의</label><input type="text" id="post-top" maxlength="60" /></div>
+      <div><label>하의</label><input type="text" id="post-bottom" maxlength="60" /></div>
+      <div><label>신발</label><input type="text" id="post-shoes" maxlength="60" /></div>
+      <div><label>장갑</label><input type="text" id="post-gloves" maxlength="60" /></div>
+    </div>
+
+    <div class="field-label-row">
+      <label>메모 (염색 코드 등)</label>
+      <span id="post-notes-count">0/200</span>
+    </div>
+    <textarea id="post-notes" maxlength="200" rows="3"></textarea>
+
+    <div class="modal-actions">
+      <button class="pill" id="post-cancel">취소</button>
+      <button class="pill accent" id="post-submit">등록</button>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="global-fab" hidden title="코스튬 등록">+</button>
+
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -36,6 +71,7 @@
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/db.js"></script>
+<script src="js/post-modal.js"></script>
 <script src="js/slot.js"></script>
 </body>
 </html>
