@@ -6,9 +6,13 @@ if (!slotId) {
   location.href = 'index.html';
 }
 
-document.getElementById('back-link').href = characterId
-  ? `character.html?id=${encodeURIComponent(characterId)}`
-  : 'index.html';
+document.getElementById('back-link').addEventListener('click', () => {
+  if (history.length > 1) {
+    history.back();
+  } else {
+    location.href = 'index.html';
+  }
+});
 
 const imageRow = document.getElementById('image-row');
 const imageInput = document.getElementById('image-input');
