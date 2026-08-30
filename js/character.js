@@ -9,6 +9,7 @@ const slotGrid = document.getElementById('slot-grid');
 const slotSearchInput = document.getElementById('slot-search');
 
 let character = null;
+let allSlots = [];
 
 mountAuthBar(document.getElementById('auth-bar'));
 setupDragSuppression(slotGrid);
@@ -32,11 +33,22 @@ async function renderHeader() {
 
 async function render() {
   await renderHeader();
+  allSlots = await DB.getSlotsByCharacter(characterId);
+  applySlotFilter();
+}
+
+function applySlotFilter() {
+  const q = slotSearchInput.value.trim().toLowerCase();
   const canPost = !!currentUser;
-  const slots = await DB.getSlotsByCharacter(characterId);
+
+  const filtered = allSlots.filter((slot) => {
+    const title = `${slotDisplayTitle(slot)} ${slot.characterName || ''}`.toLowerCase();
+    return q.length === 0 || title.includes(q);
+  });
+
   const masonry = renderMasonryGrid(slotGrid, 3);
 
-  slots.forEach((slot) => {
+  filtered.forEach((slot) => {
     const card = buildSlotCard(slot, {
       draggable: true,
       onDelete: async (s) => {
@@ -54,15 +66,6 @@ async function render() {
     addCard.addEventListener('click', () => openPostModal(characterId));
     masonry.add(addCard);
   }
-
-  applySlotFilter();
-}
-
-function applySlotFilter() {
-  const q = slotSearchInput.value.trim().toLowerCase();
-  slotGrid.querySelectorAll('.slot-card:not(.add-slot)').forEach((card) => {
-    card.hidden = q.length > 0 && !card.dataset.title.includes(q);
-  });
 }
 
 enableDragReorder(slotGrid, '[data-role="item"]', async () => {

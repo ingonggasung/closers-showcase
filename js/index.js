@@ -103,16 +103,36 @@ async function renderCharacters() {
   }
 }
 
-async function renderFeed() {
-  const slots = await DB.getAllSlots();
+let allSlots = [];
 
-  if (slots.length === 0) {
+async function renderFeed() {
+  allSlots = await DB.getAllSlots();
+
+  if (allSlots.length === 0) {
     feedGrid.innerHTML = '<div class="empty-hint">아직 등록된 게시글이 없어요.</div>';
     return;
   }
 
+  applyFeedFilter();
+}
+
+function applyFeedFilter() {
+  const q = feedSearchInput.value.trim().toLowerCase();
+
+  const filtered = allSlots.filter((slot) => {
+    const title = `${slotDisplayTitle(slot)} ${slot.characterName || ''}`.toLowerCase();
+    const matchesSearch = q.length === 0 || title.includes(q);
+    const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(slot.characterId);
+    return matchesSearch && matchesChar;
+  });
+
+  if (filtered.length === 0) {
+    feedGrid.innerHTML = '<div class="empty-hint">조건에 맞는 게시글이 없어요.</div>';
+    return;
+  }
+
   const masonry = renderMasonryGrid(feedGrid, 3);
-  slots.forEach((slot) => {
+  filtered.forEach((slot) => {
     const card = buildSlotCard(slot, {
       showCharacterTag: true,
       onDelete: async (s) => {
@@ -121,17 +141,6 @@ async function renderFeed() {
       },
     });
     masonry.add(card);
-  });
-
-  applyFeedFilter();
-}
-
-function applyFeedFilter() {
-  const q = feedSearchInput.value.trim().toLowerCase();
-  feedGrid.querySelectorAll('.slot-card').forEach((card) => {
-    const matchesSearch = q.length === 0 || card.dataset.title.includes(q);
-    const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(card.dataset.characterId);
-    card.hidden = !(matchesSearch && matchesChar);
   });
 }
 

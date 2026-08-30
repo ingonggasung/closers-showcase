@@ -104,16 +104,46 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   const carousel = document.createElement('div');
   carousel.className = 'slot-carousel';
   carousel.draggable = false; // don't let the card's own reorder-drag start over the image area
+
+  // Height per frame, in px, filled in as each image loads (index -> height).
+  // The carousel's own height is interpolated live between these as you
+  // scroll/swipe, so it tracks whichever image is currently in view instead
+  // of staying pinned to the tallest one.
+  const frameHeights = [];
+  function applyFrameHeight(i, img) {
+    const width = carousel.clientWidth || card.clientWidth || 300;
+    const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1.5;
+    frameHeights[i] = width / ratio;
+    if (i === 0) carousel.style.height = `${frameHeights[0]}px`;
+  }
+  function updateCarouselHeight() {
+    if (frameHeights.length === 0) return;
+    const width = carousel.clientWidth || 1;
+    const raw = carousel.scrollLeft / width;
+    const i0 = Math.max(0, Math.min(frameHeights.length - 1, Math.floor(raw)));
+    const i1 = Math.min(i0 + 1, frameHeights.length - 1);
+    const t = raw - i0;
+    const h0 = frameHeights[i0];
+    const h1 = frameHeights[i1];
+    if (h0 == null) return;
+    carousel.style.height = `${h0 + ((h1 ?? h0) - h0) * t}px`;
+  }
+
   if (!slot.images || slot.images.length === 0) {
     const frame = document.createElement('div');
     frame.className = 'frame empty';
     frame.textContent = '이미지 없음';
     carousel.appendChild(frame);
   } else {
-    slot.images.forEach((src) => {
+    slot.images.forEach((src, i) => {
       const frame = document.createElement('div');
       frame.className = 'frame';
-      frame.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(displayTitle)}" draggable="false">`;
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = displayTitle;
+      img.draggable = false;
+      img.addEventListener('load', () => applyFrameHeight(i, img));
+      frame.appendChild(img);
       carousel.appendChild(frame);
     });
   }
@@ -149,6 +179,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+      updateCarouselHeight();
     });
     card.appendChild(dots);
   }
