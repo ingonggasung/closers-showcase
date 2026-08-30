@@ -1,6 +1,6 @@
 // Firestore-backed data layer for Closers Showcase.
 // Collections:
-//   characters: { name, icon(Cloudinary URL), ownerId, ownerName, createdAt }
+//   characters: { name, icon(Cloudinary URL), ownerId, ownerName, order, createdAt }
 //   slots:      { characterId, characterName, ownerId, ownerName, title, images[](max 10),
 //                 parts: {...costume/accessory keys}, notes(<=200 chars),
 //                 order, createdAt }
@@ -12,19 +12,29 @@ function docToObj(doc) {
 const DB = {
   async addCharacter({ name, icon }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
+    const existing = await firestore.collection('characters').get();
     const ref = await firestore.collection('characters').add({
       name,
       icon: icon || null,
       ownerId: currentUser.uid,
       ownerName: currentUser.displayName || currentUser.email || '사용자',
+      order: existing.size,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
     return ref.id;
   },
 
   async getCharacters() {
-    const snap = await firestore.collection('characters').orderBy('createdAt', 'desc').get();
-    return snap.docs.map(docToObj);
+    const snap = await firestore.collection('characters').get();
+    return snap.docs.map(docToObj).sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+
+  async reorderCharacters(orderedIds) {
+    const batch = firestore.batch();
+    orderedIds.forEach((id, i) => {
+      batch.update(firestore.collection('characters').doc(id), { order: i });
+    });
+    await batch.commit();
   },
 
   async getCharacter(id) {

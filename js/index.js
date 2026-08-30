@@ -17,6 +17,18 @@ function isAdmin() {
 
 document.getElementById('global-fab').addEventListener('click', () => openPostModal());
 
+let suppressCharClick = false;
+grid.addEventListener('dragstart', (e) => {
+  if (e.target.closest('[data-role="item"]')) suppressCharClick = true;
+});
+grid.addEventListener('dragend', () => {
+  setTimeout(() => (suppressCharClick = false), 0);
+});
+enableDragReorder(grid, '[data-role="item"]', async () => {
+  const ids = Array.from(grid.querySelectorAll('[data-role="item"]')).map((el) => el.dataset.id);
+  await DB.reorderCharacters(ids);
+});
+
 async function render() {
   await Promise.all([renderCharacters(), renderFeed()]);
 }
@@ -29,6 +41,11 @@ async function renderCharacters() {
     const tile = document.createElement('div');
     tile.className = 'char-tile';
     tile.dataset.name = (c.name || '').toLowerCase();
+    if (isAdmin()) {
+      tile.dataset.role = 'item';
+      tile.dataset.id = c.id;
+      tile.draggable = true;
+    }
     tile.innerHTML = `
       <a href="character.html?id=${encodeURIComponent(c.id)}" class="char-avatar">
         ${c.icon ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}">` : escapeHtml((c.name || '?').slice(0, 1))}
@@ -36,6 +53,9 @@ async function renderCharacters() {
       <div class="char-name">${escapeHtml(c.name || '이름없음')}</div>
       ${isAdmin() ? '<button class="char-del" title="삭제">×</button>' : ''}
     `;
+    tile.querySelector('.char-avatar').addEventListener('click', (e) => {
+      if (suppressCharClick) e.preventDefault();
+    });
     if (isAdmin()) {
       tile.querySelector('.char-del').addEventListener('click', async (e) => {
         e.preventDefault();
