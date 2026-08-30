@@ -10,8 +10,7 @@ const filterToggle = document.getElementById('filter-toggle');
 const filterSection = document.getElementById('filter-section');
 
 let pendingIconFile = null;
-let selectedCharacterId = null;
-let selectedCharacterName = '';
+let selectedCharacters = new Map(); // id -> name, multi-select filter
 
 mountAuthBar(document.getElementById('auth-bar'));
 
@@ -46,7 +45,8 @@ async function renderCharacters() {
   characters.forEach((c) => {
     const tile = document.createElement('div');
     tile.className = 'char-tile';
-    if (c.id === selectedCharacterId) tile.classList.add('selected');
+    tile.dataset.charId = c.id;
+    if (selectedCharacters.has(c.id)) tile.classList.add('selected');
     if (isAdmin()) {
       tile.dataset.role = 'item';
       tile.dataset.id = c.id;
@@ -61,15 +61,13 @@ async function renderCharacters() {
     `;
     tile.querySelector('.char-avatar').addEventListener('click', () => {
       if (suppressCharClick) return;
-      if (selectedCharacterId === c.id) {
-        selectedCharacterId = null;
-        selectedCharacterName = '';
+      if (selectedCharacters.has(c.id)) {
+        selectedCharacters.delete(c.id);
+        tile.classList.remove('selected');
       } else {
-        selectedCharacterId = c.id;
-        selectedCharacterName = c.name || '';
+        selectedCharacters.set(c.id, c.name || '');
+        tile.classList.add('selected');
       }
-      grid.querySelectorAll('.char-tile').forEach((t) => t.classList.remove('selected'));
-      if (selectedCharacterId) tile.classList.add('selected');
       updateFeedHeading();
       applyFeedFilter();
     });
@@ -132,33 +130,36 @@ function applyFeedFilter() {
   const q = feedSearchInput.value.trim().toLowerCase();
   feedGrid.querySelectorAll('.slot-card').forEach((card) => {
     const matchesSearch = q.length === 0 || card.dataset.title.includes(q);
-    const matchesChar = !selectedCharacterId || card.dataset.characterId === selectedCharacterId;
+    const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(card.dataset.characterId);
     card.hidden = !(matchesSearch && matchesChar);
   });
 }
 
+function clearCharacterFilter(id) {
+  selectedCharacters.delete(id);
+  const tile = grid.querySelector(`.char-tile[data-char-id="${CSS.escape(id)}"]`);
+  if (tile) tile.classList.remove('selected');
+  updateFeedHeading();
+  applyFeedFilter();
+}
+
 function updateFeedHeading() {
-  if (!selectedCharacterId) {
-    feedHeading.textContent = '전체 게시글';
-    return;
-  }
   feedHeading.innerHTML = '';
-  feedHeading.append('전체 게시글 · ');
-  const chip = document.createElement('span');
-  chip.className = 'filter-chip';
-  chip.textContent = selectedCharacterName;
-  const clearBtn = document.createElement('button');
-  clearBtn.textContent = '×';
-  clearBtn.title = '필터 해제';
-  clearBtn.addEventListener('click', () => {
-    selectedCharacterId = null;
-    selectedCharacterName = '';
-    grid.querySelectorAll('.char-tile').forEach((t) => t.classList.remove('selected'));
-    updateFeedHeading();
-    applyFeedFilter();
+  feedHeading.append('전체 게시글');
+  if (selectedCharacters.size === 0) return;
+
+  feedHeading.append(' · ');
+  selectedCharacters.forEach((name, id) => {
+    const chip = document.createElement('span');
+    chip.className = 'filter-chip';
+    chip.textContent = name;
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '×';
+    clearBtn.title = '필터 해제';
+    clearBtn.addEventListener('click', () => clearCharacterFilter(id));
+    chip.appendChild(clearBtn);
+    feedHeading.appendChild(chip);
   });
-  chip.appendChild(clearBtn);
-  feedHeading.appendChild(chip);
 }
 
 feedSearchInput.addEventListener('input', applyFeedFilter);
