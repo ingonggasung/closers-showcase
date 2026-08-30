@@ -43,13 +43,23 @@ function mountAuthBar(container) {
     if (user) {
       container.innerHTML = `
         <div class="auth-user">
-          ${user.photoURL ? `<img src="${user.photoURL}" class="auth-avatar" alt="">` : ''}
-          <span class="auth-name">${user.displayName || user.email || '사용자'}</span>
+          <button class="auth-profile-btn" id="auth-profile-btn">
+            ${user.photoURL ? `<img src="${user.photoURL}" class="auth-avatar" alt="">` : ''}
+            <span class="auth-name">${user.displayName || user.email || '사용자'}</span>
+          </button>
           <button class="pill" id="auth-signout-btn">로그아웃</button>
         </div>
       `;
       document.getElementById('auth-signout-btn').addEventListener('click', () => {
         signOutUser();
+      });
+      document.getElementById('auth-profile-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        openContextMenu(rect.left, rect.bottom + 4, [
+          { label: '스크랩', onClick: () => (location.href = 'scraps.html') },
+          { label: '내 게시글 확인', onClick: () => (location.href = 'my-posts.html') },
+        ]);
       });
     } else {
       container.innerHTML = `<button class="pill accent" id="auth-signin-btn">구글로 로그인</button>`;

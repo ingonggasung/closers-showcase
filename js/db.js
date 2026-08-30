@@ -125,6 +125,38 @@ const DB = {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore.collection('scraps').doc(`${currentUser.uid}_${slotId}`).delete();
   },
+
+  async getScrappedSlots() {
+    if (!currentUser) return [];
+    const scrapsSnap = await firestore
+      .collection('scraps')
+      .where('userId', '==', currentUser.uid)
+      .get();
+    const slotIds = scrapsSnap.docs.map((d) => d.data().slotId);
+    if (slotIds.length === 0) return [];
+
+    const chunks = [];
+    for (let i = 0; i < slotIds.length; i += 10) chunks.push(slotIds.slice(i, i + 10));
+    const results = [];
+    for (const chunk of chunks) {
+      const snap = await firestore
+        .collection('slots')
+        .where(firebase.firestore.FieldPath.documentId(), 'in', chunk)
+        .get();
+      results.push(...snap.docs.map(docToObj));
+    }
+    return results;
+  },
+
+  async getMySlots() {
+    if (!currentUser) return [];
+    const snap = await firestore.collection('slots').where('ownerId', '==', currentUser.uid).get();
+    return snap.docs.map(docToObj).sort((a, b) => {
+      const at = a.createdAt ? a.createdAt.seconds : 0;
+      const bt = b.createdAt ? b.createdAt.seconds : 0;
+      return bt - at;
+    });
+  },
 };
 
 function fileToDataURL(file) {
