@@ -84,7 +84,14 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
   async function buildItems() {
     const slot = getSlot();
     const canDelete = isOwner(slot) || isAdmin();
-    const scrapped = currentUser ? await DB.isScrapped(slot.id) : false;
+    let scrapped = false;
+    if (currentUser) {
+      try {
+        scrapped = await DB.isScrapped(slot.id);
+      } catch (err) {
+        console.error('isScrapped failed:', err);
+      }
+    }
 
     const items = [
       {
@@ -122,8 +129,12 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
 
   el.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
-    const items = await buildItems();
-    openContextMenu(e.clientX, e.clientY, items);
+    try {
+      const items = await buildItems();
+      openContextMenu(e.clientX, e.clientY, items);
+    } catch (err) {
+      console.error('Failed to build context menu:', err);
+    }
   });
 
   let pressTimer = null;
@@ -141,8 +152,12 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
         suppressSlotClick = true;
         setTimeout(() => (suppressSlotClick = false), 500);
         if (navigator.vibrate) navigator.vibrate(10);
-        const items = await buildItems();
-        openContextMenu(startX, startY, items);
+        try {
+          const items = await buildItems();
+          openContextMenu(startX, startY, items);
+        } catch (err) {
+          console.error('Failed to build context menu:', err);
+        }
       }, 500);
     },
     { passive: true }
