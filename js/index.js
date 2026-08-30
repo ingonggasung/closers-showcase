@@ -5,10 +5,13 @@ const iconInput = document.getElementById('char-icon-input');
 const iconPreview = document.getElementById('char-icon-preview');
 const feedGrid = document.getElementById('feed-grid');
 const feedSearchInput = document.getElementById('feed-search');
+const feedHeading = document.getElementById('feed-heading');
 const filterToggle = document.getElementById('filter-toggle');
 const filterSection = document.getElementById('filter-section');
 
 let pendingIconFile = null;
+let selectedCharacterId = null;
+let selectedCharacterName = '';
 
 mountAuthBar(document.getElementById('auth-bar'));
 
@@ -43,20 +46,32 @@ async function renderCharacters() {
   characters.forEach((c) => {
     const tile = document.createElement('div');
     tile.className = 'char-tile';
+    if (c.id === selectedCharacterId) tile.classList.add('selected');
     if (isAdmin()) {
       tile.dataset.role = 'item';
       tile.dataset.id = c.id;
       tile.draggable = true;
     }
     tile.innerHTML = `
-      <a href="character.html?id=${encodeURIComponent(c.id)}" class="char-avatar">
+      <button type="button" class="char-avatar">
         ${c.icon ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}">` : escapeHtml((c.name || '?').slice(0, 1))}
-      </a>
+      </button>
       <div class="char-name">${escapeHtml(c.name || '이름없음')}</div>
       ${isAdmin() ? '<button class="char-del" title="삭제">×</button>' : ''}
     `;
-    tile.querySelector('.char-avatar').addEventListener('click', (e) => {
-      if (suppressCharClick) e.preventDefault();
+    tile.querySelector('.char-avatar').addEventListener('click', () => {
+      if (suppressCharClick) return;
+      if (selectedCharacterId === c.id) {
+        selectedCharacterId = null;
+        selectedCharacterName = '';
+      } else {
+        selectedCharacterId = c.id;
+        selectedCharacterName = c.name || '';
+      }
+      grid.querySelectorAll('.char-tile').forEach((t) => t.classList.remove('selected'));
+      if (selectedCharacterId) tile.classList.add('selected');
+      updateFeedHeading();
+      applyFeedFilter();
     });
     if (isAdmin()) {
       tile.querySelector('.char-del').addEventListener('click', async (e) => {
@@ -116,8 +131,34 @@ async function renderFeed() {
 function applyFeedFilter() {
   const q = feedSearchInput.value.trim().toLowerCase();
   feedGrid.querySelectorAll('.slot-card').forEach((card) => {
-    card.hidden = q.length > 0 && !card.dataset.title.includes(q);
+    const matchesSearch = q.length === 0 || card.dataset.title.includes(q);
+    const matchesChar = !selectedCharacterId || card.dataset.characterId === selectedCharacterId;
+    card.hidden = !(matchesSearch && matchesChar);
   });
+}
+
+function updateFeedHeading() {
+  if (!selectedCharacterId) {
+    feedHeading.textContent = '전체 게시글';
+    return;
+  }
+  feedHeading.innerHTML = '';
+  feedHeading.append('전체 게시글 · ');
+  const chip = document.createElement('span');
+  chip.className = 'filter-chip';
+  chip.textContent = selectedCharacterName;
+  const clearBtn = document.createElement('button');
+  clearBtn.textContent = '×';
+  clearBtn.title = '필터 해제';
+  clearBtn.addEventListener('click', () => {
+    selectedCharacterId = null;
+    selectedCharacterName = '';
+    grid.querySelectorAll('.char-tile').forEach((t) => t.classList.remove('selected'));
+    updateFeedHeading();
+    applyFeedFilter();
+  });
+  chip.appendChild(clearBtn);
+  feedHeading.appendChild(chip);
 }
 
 feedSearchInput.addEventListener('input', applyFeedFilter);

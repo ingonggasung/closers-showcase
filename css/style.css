@@ -105,6 +105,29 @@ button {
   font-weight: 700;
   color: var(--text);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 3px 6px 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.filter-chip button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px;
 }
 .section-actions {
   display: flex;
@@ -342,11 +365,22 @@ button {
   font-weight: 700;
   font-size: 20px;
   color: var(--text-dim);
+  font-family: inherit;
+  padding: 0;
+  cursor: pointer;
   transition: border-color .15s, transform .15s;
 }
 .char-tile:hover .char-avatar {
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+.char-tile.selected .char-avatar {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+.char-tile.selected .char-name {
+  color: var(--accent);
+  font-weight: 700;
 }
 .char-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .char-name {

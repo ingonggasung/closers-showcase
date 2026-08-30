@@ -92,6 +92,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   const card = document.createElement('div');
   card.className = 'slot-card';
   card.dataset.title = `${displayTitle} ${slot.characterName || ''}`.toLowerCase();
+  card.dataset.characterId = slot.characterId;
 
   const mine = isOwner(slot);
   if (mine && draggable) {
