@@ -665,12 +665,12 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 0 0;
 }
 .carousel-dots .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--border);
   transition: background .15s, transform .15s;
