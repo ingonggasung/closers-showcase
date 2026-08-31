@@ -725,11 +725,13 @@ button {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 6px 2px 16px;
+  padding: 6px 2px;
   scroll-snap-type: x proximity;
   cursor: grab;
   user-select: none;
+  scrollbar-width: none;
 }
+.image-row::-webkit-scrollbar { display: none; }
 .image-row.dragging-scroll {
   cursor: grabbing;
   scroll-snap-type: none;
