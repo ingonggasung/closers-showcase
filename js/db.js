@@ -169,6 +169,15 @@ const DB = {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   },
+
+  async getReports() {
+    const snap = await firestore.collection('reports').orderBy('createdAt', 'desc').get();
+    return snap.docs.map(docToObj);
+  },
+
+  async deleteReport(id) {
+    await firestore.collection('reports').doc(id).delete();
+  },
 };
 
 function fileToDataURL(file) {

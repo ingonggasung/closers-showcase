@@ -301,6 +301,56 @@ button {
   color: var(--text);
   line-height: 1.6;
 }
+
+/* ---------- Report list (admin) ---------- */
+.report-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.report-post {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+}
+.report-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--panel-2);
+  flex-shrink: 0;
+}
+.report-post-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.report-link {
+  font-size: 12px;
+  color: var(--accent);
+}
+.report-meta {
+  flex: 1;
+  min-width: 220px;
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.report-meta .k {
+  color: var(--text);
+  font-weight: 600;
+  margin-right: 6px;
+}
 .slot-owner-tag {
   font-size: 10px;
   color: var(--text-dim);

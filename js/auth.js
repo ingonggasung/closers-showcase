@@ -56,10 +56,14 @@ function mountAuthBar(container) {
       document.getElementById('auth-profile-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         const rect = e.currentTarget.getBoundingClientRect();
-        openContextMenu(rect.left, rect.bottom + 4, [
+        const menuItems = [
           { label: '스크랩', onClick: () => (location.href = 'scraps.html') },
           { label: '내 게시글 확인', onClick: () => (location.href = 'my-posts.html') },
-        ]);
+        ];
+        if (isAdmin()) {
+          menuItems.push({ label: '신고 목록', onClick: () => (location.href = 'reports.html') });
+        }
+        openContextMenu(rect.left, rect.bottom + 4, menuItems);
       });
     } else {
       container.innerHTML = `<button class="pill accent" id="auth-signin-btn">구글로 로그인</button>`;
