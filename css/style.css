@@ -608,6 +608,9 @@ button {
   background: #101114;
   cursor: grab;
   user-select: none;
+  touch-action: pan-y; /* let JS drive horizontal swipes (see enableDragScroll)
+    instead of native touch-scroll momentum, which could fling past more
+    than one frame; vertical page scrolling still passes through untouched */
 }
 .slot-carousel-track::-webkit-scrollbar { display: none; }
 .slot-carousel-track.dragging-scroll {

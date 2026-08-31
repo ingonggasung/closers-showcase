@@ -59,14 +59,19 @@ function animateScrollTo(el, targetLeft, duration = 260) {
 }
 
 // Lets a horizontally-scrolling element (image carousel) be dragged with the
-// mouse to scroll, like a touch swipe. Touch/pen input is left alone since
-// it already scrolls natively via overflow-x. If the drag moved enough,
-// suppresses the next card click so a swipe doesn't also trigger navigation.
+// mouse to scroll, like a touch swipe. If the drag moved enough, suppresses
+// the next card click so a swipe doesn't also trigger navigation.
 // `snapToFrames`: true for the grid card carousel, whose slides are each
 // exactly one clientWidth wide - lets drag-release snap to the nearest one
 // ourselves. Left false for the slot detail page's image row, where shots
 // are a fixed CSS width rather than one-per-clientWidth, so that math
 // wouldn't apply.
+// Touch input is only handled here (instead of the native overflow-x
+// scroll) when snapToFrames is true: native touch-scroll momentum could
+// otherwise fling past more than one frame on a fast swipe, whereas
+// tracking the pointer ourselves and snapping to the nearest frame on
+// release caps movement to what the finger actually dragged. The
+// free-width image row is left to scroll natively on touch as before.
 function enableDragScroll(el, { snapToFrames = false } = {}) {
   let isDown = false;
   let startX = 0;
@@ -74,7 +79,9 @@ function enableDragScroll(el, { snapToFrames = false } = {}) {
   let moved = false;
 
   el.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    const isTouchHandled = snapToFrames && e.pointerType === 'touch';
+    if (!(e.pointerType === 'mouse' || isTouchHandled)) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (e.target.closest('button')) return; // let nav/delete buttons handle their own clicks
     isDown = true;
     moved = false;
