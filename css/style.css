@@ -669,8 +669,8 @@ button {
   padding: 8px 0 0;
 }
 .carousel-dots .dot {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--border);
   transition: background .15s, transform .15s;
