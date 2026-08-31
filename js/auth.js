@@ -2,21 +2,37 @@
 // initial signed-in/out state, so pages can wait before rendering owner-only UI.
 let currentUser = null;
 let currentUserProfile = null; // custom profile fields the user set themselves, e.g. { photoURL }
+let authResolved = false; // true once the very first onAuthStateChanged callback has run
+let profileResolved = false; // true once the profile fetch for the current user (if any) has settled
 const authChangeListeners = [];
 const profileChangeListeners = [];
 
+// Registers fn to run on every future auth change. Crucially, if auth has
+// ALREADY resolved by the time this is called, fn also runs immediately
+// with the current state - without this, a listener registered even a few
+// milliseconds after Firebase's (sometimes very fast) initial resolution
+// would never run at all, since onAuthStateChanged only fires again on an
+// actual sign-in/out. That race is exactly what caused pages to
+// intermittently render nothing on load, with no error, fixed only by a
+// refresh (which re-rolls the race) - a plain array+forEach has no way to
+// "catch up" a late subscriber the way an already-settled Promise would.
 function onAuthChange(fn) {
   authChangeListeners.push(fn);
+  if (authResolved) fn(currentUser);
 }
 
 // Fires whenever the signed-in user's custom profile (photo) changes, so
 // every mounted auth bar can refresh without waiting for an auth event.
+// Same late-subscriber catch-up as onAuthChange, for the same reason.
 function onProfileChange(fn) {
   profileChangeListeners.push(fn);
+  if (profileResolved) fn();
 }
 
 async function refreshUserProfile(uid) {
+  profileResolved = false;
   currentUserProfile = uid ? await DB.getUserProfile(uid).catch(() => null) : null;
+  profileResolved = true;
   profileChangeListeners.forEach((fn) => fn());
 }
 
@@ -24,6 +40,7 @@ const authReady = new Promise((resolve) => {
   let first = true;
   auth.onAuthStateChanged((user) => {
     currentUser = user;
+    authResolved = true;
     if (first) {
       first = false;
       resolve(user);
