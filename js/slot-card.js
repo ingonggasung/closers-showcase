@@ -23,14 +23,29 @@ function slotDisplayTitle(slot) {
 // smooth-scroll gets interrupted/reset when something changes the element's
 // layout (e.g. height) mid-animation from inside a 'scroll' handler, which
 // is exactly what the live-resizing carousel needs to do.
+//
+// Tracks one "current animation" token per element so a new call always
+// supersedes an in-flight one instead of both fighting over scrollLeft -
+// without this, clicking the arrow again before the first animation
+// finished could leave the carousel stuck mid-transition between images.
+const scrollAnimationTokens = new WeakMap();
+
 function animateScrollTo(el, targetLeft, duration = 260) {
   const startLeft = el.scrollLeft;
   const delta = targetLeft - startLeft;
-  if (delta === 0) return;
+  const token = {};
+  scrollAnimationTokens.set(el, token);
+
+  if (delta === 0) {
+    el.classList.remove('dragging-scroll');
+    return;
+  }
+
   const startTime = performance.now();
   el.classList.add('dragging-scroll'); // reuse to suspend scroll-snap during the animation
 
   function step(now) {
+    if (scrollAnimationTokens.get(el) !== token) return; // superseded by a newer call
     const t = Math.min(1, (now - startTime) / duration);
     const eased = 1 - Math.pow(1 - t, 3);
     el.scrollLeft = startLeft + delta * eased;
