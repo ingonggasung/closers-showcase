@@ -24,9 +24,17 @@ enableDragScroll(imageRow);
 // uniform-width home-feed carousel - instead, pick whichever element's own
 // center is closest to the viewport's center, matching the
 // scroll-snap-align: center behavior on .shot/.add-shot.
+// Uses getBoundingClientRect (always viewport-relative, already accounts
+// for scroll) rather than offsetLeft: offsetLeft is relative to the
+// element's offsetParent, which is only guaranteed to be imageRow itself
+// if imageRow has a `position` set - it doesn't, so offsetLeft here was
+// actually relative to some ancestor further up the page, silently
+// breaking the "closest to center" math against imageRow.scrollLeft.
 function distToViewCenter(el) {
-  const viewCenter = imageRow.scrollLeft + imageRow.clientWidth / 2;
-  const center = el.offsetLeft + el.offsetWidth / 2;
+  const rowRect = imageRow.getBoundingClientRect();
+  const viewCenter = rowRect.left + rowRect.width / 2;
+  const elRect = el.getBoundingClientRect();
+  const center = elRect.left + elRect.width / 2;
   return Math.abs(center - viewCenter);
 }
 
