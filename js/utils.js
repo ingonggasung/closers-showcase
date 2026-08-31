@@ -62,6 +62,35 @@ function buildPartsFieldGrid(keys, values) {
   return { el, inputs };
 }
 
+const LAST_SEEN_POST_KEY = 'ccs_last_seen_post_ts';
+
+const FAVICON_PLAIN =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="78" font-size="70" text-anchor="middle">👗</text></svg>'
+  );
+const FAVICON_NEW_POST =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="78" font-size="70" text-anchor="middle">👗</text><circle cx="82" cy="20" r="16" fill="#ff3d3d" stroke="#17181c" stroke-width="4"/></svg>'
+  );
+
+// Swaps the browser-tab favicon to a version with a red dot when a post
+// exists that's newer than the last one this browser has "seen". Call on
+// every page load; index.js additionally marks posts as seen once its feed
+// has actually loaded, which is the only place the dot gets cleared.
+async function updateFaviconBadge() {
+  const link = document.getElementById('favicon-link');
+  if (!link) return;
+  try {
+    const latest = (await DB.getLatestSlotTimestamp()) || 0;
+    const lastSeen = Number(localStorage.getItem(LAST_SEEN_POST_KEY) || 0);
+    link.href = latest > lastSeen ? FAVICON_NEW_POST : FAVICON_PLAIN;
+  } catch {
+    link.href = FAVICON_PLAIN;
+  }
+}
+
 function debounce(fn, wait) {
   let timer;
   return (...args) => {

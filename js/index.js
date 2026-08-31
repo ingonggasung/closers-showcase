@@ -150,6 +150,17 @@ let allSlots = [];
 async function renderFeed() {
   allSlots = await DB.getAllSlots();
 
+  // Visiting the feed counts as having seen the newest post - clears the
+  // favicon's new-post dot (see utils.js).
+  const newestTs = allSlots[0] && allSlots[0].createdAt ? allSlots[0].createdAt.seconds : 0;
+  const lastSeen = Number(localStorage.getItem(LAST_SEEN_POST_KEY) || 0);
+  if (newestTs > lastSeen) {
+    try {
+      localStorage.setItem(LAST_SEEN_POST_KEY, String(newestTs));
+    } catch {}
+    updateFaviconBadge();
+  }
+
   if (allSlots.length === 0) {
     feedGrid.innerHTML = '<div class="empty-hint">아직 등록된 게시글이 없어요.</div>';
     return;

@@ -80,27 +80,9 @@ async function changeNickname(nickname) {
   profileChangeListeners.forEach((fn) => fn());
 }
 
-const LAST_SEEN_POST_KEY = 'ccs_last_seen_post_ts';
-
 // Renders the login/logout control into `container` and keeps it in sync
 // with auth state. Call once per page.
 function mountAuthBar(container) {
-  let latestPostTs = 0; // newest known post timestamp, refreshed each render
-
-  // Shows a red dot on the profile icon when a post exists that's newer
-  // than the last one this browser has "seen" (cleared on opening the menu).
-  async function refreshNewPostBadge() {
-    const dot = document.getElementById('auth-notif-dot');
-    if (!dot) return;
-    try {
-      latestPostTs = (await DB.getLatestSlotTimestamp()) || 0;
-      const lastSeen = Number(localStorage.getItem(LAST_SEEN_POST_KEY) || 0);
-      dot.hidden = latestPostTs <= lastSeen;
-    } catch {
-      dot.hidden = true;
-    }
-  }
-
   function render(user) {
     if (user) {
       const photo = displayPhotoURL(user);
@@ -109,7 +91,6 @@ function mountAuthBar(container) {
           <button class="auth-profile-btn" id="auth-profile-btn">
             ${photo ? `<img src="${photo}" class="auth-avatar" alt="">` : ''}
             <span class="auth-name">${escapeHtml(displayName(user))}</span>
-            <span class="notif-dot" id="auth-notif-dot" hidden></span>
           </button>
           <button class="pill" id="auth-signout-btn">로그아웃</button>
         </div>
@@ -131,11 +112,6 @@ function mountAuthBar(container) {
       });
       document.getElementById('auth-profile-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        try {
-          localStorage.setItem(LAST_SEEN_POST_KEY, String(latestPostTs || Math.floor(Date.now() / 1000)));
-        } catch {}
-        const dot = document.getElementById('auth-notif-dot');
-        if (dot) dot.hidden = true;
         const rect = e.currentTarget.getBoundingClientRect();
         const menuItems = [
           { label: '프로필 사진 변경', onClick: () => photoInput.click() },
@@ -164,7 +140,6 @@ function mountAuthBar(container) {
         }
         openContextMenu(rect.left, rect.bottom + 4, menuItems);
       });
-      refreshNewPostBadge();
     } else {
       container.innerHTML = `<button class="pill accent" id="auth-signin-btn">구글로 로그인</button>`;
       document.getElementById('auth-signin-btn').addEventListener('click', () => {

@@ -262,3 +262,5 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
+
+updateFaviconBadge();
