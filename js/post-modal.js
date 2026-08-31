@@ -11,6 +11,11 @@ const postImagePreview = document.getElementById('post-image-preview');
 const postCostumeContainer = document.getElementById('post-costume-fields');
 const postAccessoryContainer = document.getElementById('post-accessory-fields');
 let postFields = {};
+// Files picked so far, across possibly several separate file-picker opens -
+// a plain <input type="file"> replaces its .files on every selection, so
+// without accumulating them ourselves, picking more images after an
+// initial batch would silently discard the first batch.
+let pendingPostImages = [];
 
 function rebuildPostFields() {
   const costume = buildPartsFieldGrid(COSTUME_KEYS);
@@ -27,9 +32,37 @@ const postNotesCount = document.getElementById('post-notes-count');
 const postSubmitBtn = document.getElementById('post-submit');
 const globalFab = document.getElementById('global-fab');
 
+function renderPostImagePreview() {
+  postImagePreview.innerHTML = '';
+  pendingPostImages.forEach((file, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'post-image-thumb';
+
+    const img = document.createElement('img');
+    const reader = new FileReader();
+    reader.onload = () => (img.src = reader.result);
+    reader.readAsDataURL(file);
+    thumb.appendChild(img);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-shot';
+    removeBtn.title = '삭제';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', () => {
+      pendingPostImages.splice(i, 1);
+      renderPostImagePreview();
+    });
+    thumb.appendChild(removeBtn);
+
+    postImagePreview.appendChild(thumb);
+  });
+}
+
 function resetPostForm() {
   postTitleInput.value = '';
   postImagesInput.value = '';
+  pendingPostImages = [];
   postImagePreview.innerHTML = '';
   rebuildPostFields();
   postNotes.value = '';
@@ -73,15 +106,11 @@ function closePostModal() {
 }
 
 postImagesInput.addEventListener('change', () => {
-  const files = Array.from(postImagesInput.files || []).slice(0, MAX_POST_IMAGES);
-  postImagePreview.innerHTML = '';
-  files.forEach((file) => {
-    const img = document.createElement('img');
-    const reader = new FileReader();
-    reader.onload = () => (img.src = reader.result);
-    reader.readAsDataURL(file);
-    postImagePreview.appendChild(img);
-  });
+  const newFiles = Array.from(postImagesInput.files || []);
+  const room = MAX_POST_IMAGES - pendingPostImages.length;
+  pendingPostImages = pendingPostImages.concat(newFiles.slice(0, room));
+  postImagesInput.value = ''; // so picking the same file(s) again later still fires 'change'
+  renderPostImagePreview();
 });
 
 postNotes.addEventListener('input', () => {
@@ -103,13 +132,11 @@ postSubmitBtn.addEventListener('click', async () => {
     alert('캐릭터를 선택해주세요.');
     return;
   }
-  const files = Array.from(postImagesInput.files || []).slice(0, MAX_POST_IMAGES);
-
   postSubmitBtn.disabled = true;
   postSubmitBtn.textContent = '등록 중...';
   try {
     const images = [];
-    for (const file of files) {
+    for (const file of pendingPostImages) {
       images.push(await uploadImageToCloudinary(file));
     }
     const parts = {};
