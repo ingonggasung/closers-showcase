@@ -113,7 +113,14 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
       { label: '공유', onClick: () => shareSlot(slot) },
     ];
 
-    if (!isOwner(slot)) {
+    if (isOwner(slot)) {
+      items.push({
+        label: '수정',
+        onClick: () => {
+          location.href = `slot.html?id=${encodeURIComponent(slot.id)}&cid=${encodeURIComponent(slot.characterId)}&edit=1`;
+        },
+      });
+    } else {
       items.push({
         label: '신고',
         onClick: async () => {

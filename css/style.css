@@ -839,10 +839,17 @@ button {
   font-size: 20px;
   font-weight: 700;
   padding: 4px 0;
-  margin-bottom: 18px;
   width: 100%;
 }
 .slot-title-input:focus { outline: none; border-color: var(--accent); }
+.slot-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.slot-title-row .slot-title-input { flex: 1; }
+.slot-title-row .pill { flex-shrink: 0; }
 
 /* ---------- Context menu ---------- */
 .context-menu {

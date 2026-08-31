@@ -1,6 +1,11 @@
 const params = new URLSearchParams(location.search);
 const slotId = params.get('id');
 const characterId = params.get('cid');
+// Owners see a read-only view by default, same as everyone else - the
+// editable fields only show once editMode is on, either by clicking "수정"
+// here or via the "수정" entry in a post's right-click/long-press menu
+// (which links here with ?edit=1).
+let editMode = params.get('edit') === '1';
 
 if (!slotId) {
   location.href = 'index.html';
@@ -121,12 +126,20 @@ async function render() {
     location.href = 'index.html';
     return;
   }
+  renderContent();
+}
+
+function renderContent() {
   const owner = isOwner(currentSlot);
+  const editing = owner && editMode;
   document.title = `${slotDisplayTitle(currentSlot)} - 클로저스 캐릭터 자랑`;
   ownerLine.textContent = `게시자: ${currentSlot.ownerName || '익명'}`;
 
   titleArea.innerHTML = '';
-  if (owner) {
+  const titleRow = document.createElement('div');
+  titleRow.className = 'slot-title-row';
+
+  if (editing) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'slot-title-input';
@@ -139,17 +152,30 @@ async function render() {
       currentSlot.title = title;
       document.title = `${slotDisplayTitle(currentSlot)} - 클로저스 캐릭터 자랑`;
     });
-    titleArea.appendChild(input);
+    titleRow.appendChild(input);
   } else {
     const h1 = document.createElement('h1');
     h1.className = 'slot-title-input';
     h1.style.borderBottom = 'none';
     h1.textContent = slotDisplayTitle(currentSlot);
-    titleArea.appendChild(h1);
+    titleRow.appendChild(h1);
   }
 
-  renderImages(owner);
-  renderDetailPanel(owner);
+  if (owner) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'pill' + (editing ? '' : ' accent');
+    toggleBtn.textContent = editing ? '완료' : '수정';
+    toggleBtn.addEventListener('click', () => {
+      editMode = !editMode;
+      renderContent();
+    });
+    titleRow.appendChild(toggleBtn);
+  }
+
+  titleArea.appendChild(titleRow);
+
+  renderImages(editing);
+  renderDetailPanel(editing);
 }
 
 function renderImages(owner) {
