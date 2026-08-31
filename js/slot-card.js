@@ -118,6 +118,15 @@ function enableDragScroll(el, { snapToFrames = false } = {}) {
   el.addEventListener('pointercancel', endDrag);
 }
 
+// Column count for the post-card masonry grids, based on viewport width so
+// cards aren't squeezed together on narrow/mobile screens.
+function getMasonryColumns() {
+  const w = window.innerWidth;
+  if (w < 640) return 1;
+  if (w < 900) return 2;
+  return 3;
+}
+
 // CSS `column-count` can silently collapse to fewer columns when there's
 // little/uneven content (column-fill: balance). Building N real column
 // elements and round-robin-appending into them guarantees the column count.

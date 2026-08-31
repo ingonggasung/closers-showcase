@@ -46,7 +46,7 @@ function applySlotFilter() {
     return q.length === 0 || title.includes(q);
   });
 
-  const masonry = renderMasonryGrid(slotGrid, 3);
+  const masonry = renderMasonryGrid(slotGrid, getMasonryColumns());
 
   filtered.forEach((slot) => {
     const card = buildSlotCard(slot, {
@@ -76,6 +76,7 @@ enableDragReorder(slotGrid, '[data-role="item"]', async () => {
 });
 
 slotSearchInput.addEventListener('input', applySlotFilter);
+window.addEventListener('resize', debounce(() => applySlotFilter(), 200));
 
 function showLoadError() {
   slotGrid.innerHTML =

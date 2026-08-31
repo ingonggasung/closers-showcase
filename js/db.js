@@ -6,6 +6,8 @@
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
+//   users:      { photoURL(Cloudinary URL), updatedAt } - doc id is the user's uid;
+//               each user may only read/write their own doc (see Firestore rules)
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
@@ -177,6 +179,22 @@ const DB = {
 
   async deleteReport(id) {
     await firestore.collection('reports').doc(id).delete();
+  },
+
+  async getUserProfile(uid) {
+    const doc = await firestore.collection('users').doc(uid).get();
+    return doc.exists ? doc.data() : null;
+  },
+
+  async setUserPhoto(photoURL) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    await firestore
+      .collection('users')
+      .doc(currentUser.uid)
+      .set(
+        { photoURL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      );
   },
 };
 

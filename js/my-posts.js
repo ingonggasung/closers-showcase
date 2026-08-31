@@ -14,7 +14,7 @@ async function render() {
     return;
   }
 
-  const masonry = renderMasonryGrid(myPostsGrid, 3);
+  const masonry = renderMasonryGrid(myPostsGrid, getMasonryColumns());
   slots.forEach((slot) => {
     const card = buildSlotCard(slot, {
       showCharacterTag: true,
@@ -39,3 +39,10 @@ onAuthChange(() => render().catch((err) => {
   console.error(err);
   showLoadError();
 }));
+
+window.addEventListener(
+  'resize',
+  debounce(() => {
+    if (currentUser) render().catch(() => {});
+  }, 200)
+);

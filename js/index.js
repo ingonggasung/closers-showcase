@@ -165,7 +165,7 @@ function applyFeedFilter() {
     return;
   }
 
-  const masonry = renderMasonryGrid(feedGrid, 3);
+  const masonry = renderMasonryGrid(feedGrid, getMasonryColumns());
   filtered.forEach((slot) => {
     const card = buildSlotCard(slot, {
       showCharacterTag: true,
@@ -177,6 +177,8 @@ function applyFeedFilter() {
     masonry.add(card);
   });
 }
+
+window.addEventListener('resize', debounce(() => applyFeedFilter(), 200));
 
 function clearCharacterFilter(id) {
   selectedCharacters.delete(id);

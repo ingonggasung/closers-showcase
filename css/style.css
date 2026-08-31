@@ -241,7 +241,7 @@ button {
 .scroll-top-btn[hidden] { display: none; }
 
 .modal-box.modal-box-wide {
-  width: min(92vw, 640px);
+  width: min(92vw, 800px);
   max-height: 86vh;
   overflow-y: auto;
 }
@@ -866,4 +866,20 @@ button {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 18px;
+}
+
+/* ---------- Responsive (tablet / mobile) ---------- */
+@media (max-width: 720px) {
+  .char-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .page { padding: 20px 14px 48px; }
+  .char-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
+  .post-parts-grid { grid-template-columns: 1fr; }
+  .section-head { flex-wrap: wrap; row-gap: 8px; }
+  .section-actions { width: 100%; }
+  .search-input { min-width: 0; width: 100%; }
+  .fab { right: 16px; bottom: 16px; }
+  .scroll-top-btn { right: 16px; bottom: 76px; }
 }

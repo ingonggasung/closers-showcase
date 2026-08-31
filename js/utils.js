@@ -62,6 +62,14 @@ function buildPartsFieldGrid(keys, values) {
   return { el, inputs };
 }
 
+function debounce(fn, wait) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (ch) => ({
     '&': '&amp;',
