@@ -1,5 +1,6 @@
 // Right-click (desktop) / long-press (touch) context menu for posts:
-// 스크랩 (scrap/bookmark), 공유 (share), and 삭제 (delete, owner/admin only).
+// 스크랩 (scrap/bookmark), 공유 (share), 신고 (report, hidden on your own
+// post), and 삭제 (delete, owner/admin only).
 
 let activeContextMenu = null;
 
@@ -111,6 +112,26 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
       },
       { label: '공유', onClick: () => shareSlot(slot) },
     ];
+
+    if (!isOwner(slot)) {
+      items.push({
+        label: '신고',
+        onClick: async () => {
+          if (!currentUser) {
+            alert('로그인이 필요합니다.');
+            return;
+          }
+          const reason = prompt('신고 사유를 입력해주세요 (선택 사항):', '');
+          if (reason === null) return; // cancelled
+          try {
+            await DB.addReport(slot.id, reason);
+            alert('신고가 접수되었습니다.');
+          } catch (err) {
+            alert('신고 접수에 실패했습니다: ' + err.message);
+          }
+        },
+      });
+    }
 
     if (canDelete && onDelete) {
       items.push({

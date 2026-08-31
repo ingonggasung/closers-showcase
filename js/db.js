@@ -5,6 +5,7 @@
 //                 parts: {...costume/accessory keys}, notes(<=200 chars),
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
+//   reports:    { slotId, reporterId, reporterName, reason, createdAt }
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
@@ -155,6 +156,17 @@ const DB = {
       const at = a.createdAt ? a.createdAt.seconds : 0;
       const bt = b.createdAt ? b.createdAt.seconds : 0;
       return bt - at;
+    });
+  },
+
+  async addReport(slotId, reason) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    await firestore.collection('reports').add({
+      slotId,
+      reporterId: currentUser.uid,
+      reporterName: currentUser.displayName || currentUser.email || '사용자',
+      reason: (reason || '').slice(0, 300),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   },
 };
