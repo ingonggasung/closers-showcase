@@ -476,7 +476,6 @@ button {
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
-  scroll-snap-type: x mandatory;
   scrollbar-width: none;
   background: #101114;
   cursor: grab;
@@ -485,12 +484,10 @@ button {
 .slot-carousel::-webkit-scrollbar { display: none; }
 .slot-carousel.dragging-scroll {
   cursor: grabbing;
-  scroll-snap-type: none;
 }
 .slot-carousel .frame {
   flex: 0 0 100%;
   width: 100%;
-  scroll-snap-align: start;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -62,7 +62,12 @@ function animateScrollTo(el, targetLeft, duration = 260) {
 // mouse to scroll, like a touch swipe. Touch/pen input is left alone since
 // it already scrolls natively via overflow-x. If the drag moved enough,
 // suppresses the next card click so a swipe doesn't also trigger navigation.
-function enableDragScroll(el) {
+// `snapToFrames`: true for the grid card carousel, whose slides are each
+// exactly one clientWidth wide - lets drag-release snap to the nearest one
+// ourselves. Left false for the slot detail page's image row, where shots
+// are a fixed CSS width rather than one-per-clientWidth, so that math
+// wouldn't apply.
+function enableDragScroll(el, { snapToFrames = false } = {}) {
   let isDown = false;
   let startX = 0;
   let startScrollLeft = 0;
@@ -89,10 +94,24 @@ function enableDragScroll(el) {
   function endDrag() {
     if (!isDown) return;
     isDown = false;
-    el.classList.remove('dragging-scroll');
     if (moved) {
       suppressSlotClick = true;
       setTimeout(() => (suppressSlotClick = false), 0);
+    }
+    if (moved && snapToFrames) {
+      // Snap to the nearest frame ourselves instead of leaning on CSS
+      // scroll-snap: re-enabling it here would let the browser's own
+      // snap-correction animation run, and that's a native scroll
+      // animation just like scrollBy(smooth) - it gets interrupted by
+      // the height-update logic the same way, which could leave a nav
+      // arrow's hidden state stuck from mid-drag instead of the
+      // settled page.
+      const width = el.clientWidth || 1;
+      const targetIndex = Math.round(el.scrollLeft / width);
+      const max = el.scrollWidth - el.clientWidth;
+      animateScrollTo(el, Math.max(0, Math.min(max, targetIndex * width)));
+    } else {
+      el.classList.remove('dragging-scroll');
     }
   }
   el.addEventListener('pointerup', endDrag);
@@ -190,7 +209,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   card.appendChild(carousel);
 
   if (slot.images && slot.images.length > 1) {
-    enableDragScroll(carousel);
+    enableDragScroll(carousel, { snapToFrames: true });
     const prev = document.createElement('button');
     prev.className = 'slot-nav prev';
     prev.textContent = '‹';
@@ -219,6 +238,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       return d;
     });
     let heightRAF = null;
+    let settleTimer = null;
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
@@ -234,6 +254,24 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
         heightRAF = null;
         updateCarouselHeight();
       });
+
+      // Touch swipes scroll natively (enableDragScroll only handles mouse),
+      // so there's no drag-end hook to snap them - CSS scroll-snap would
+      // normally cover that, but it's exactly the kind of browser-driven
+      // scroll animation the height updates above can interrupt. Instead,
+      // once scrolling has been quiet for a bit, snap to the nearest frame
+      // ourselves via the same animateScrollTo used everywhere else.
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        if (carousel.classList.contains('dragging-scroll')) return; // mouse drag handles its own snap on release
+        const width = carousel.clientWidth || 1;
+        const targetIndex = Math.round(carousel.scrollLeft / width);
+        const max = carousel.scrollWidth - carousel.clientWidth;
+        const target = Math.max(0, Math.min(max, targetIndex * width));
+        if (Math.abs(carousel.scrollLeft - target) > 1) {
+          animateScrollTo(carousel, target);
+        }
+      }, 120);
     });
     card.appendChild(dots);
   }
