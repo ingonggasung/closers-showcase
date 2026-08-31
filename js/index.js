@@ -43,13 +43,21 @@ filterToggle.addEventListener('click', () => {
   setFilterExpanded(!expanded);
 });
 
-// Auto-collapse the filter as soon as the user scrolls down to browse the
-// feed; the toggle bar itself stays pinned via .sticky-header so it's
-// always reachable to re-expand.
+// Auto-collapse the filter once the user has scrolled far enough that the
+// post feed is starting to show - not on a fixed tiny pixel amount, so a
+// tall character grid (many rows on narrow/mobile screens) can still be
+// scrolled through and fully seen before it collapses. On desktop, where
+// the grid is usually short enough to already fit above the feed, this
+// falls back to the original "collapse on the first bit of scrolling"
+// behavior via the 10px floor. The toggle bar itself stays pinned via
+// .sticky-header so it's always reachable to re-expand.
 window.addEventListener(
   'scroll',
   () => {
-    if (filterToggle.getAttribute('aria-expanded') === 'true' && window.scrollY > 10) {
+    if (filterToggle.getAttribute('aria-expanded') !== 'true') return;
+    const feedTop = feedHeading.getBoundingClientRect().top + window.scrollY;
+    const boundary = Math.max(10, feedTop - window.innerHeight);
+    if (window.scrollY > boundary) {
       setFilterExpanded(false);
     }
   },
