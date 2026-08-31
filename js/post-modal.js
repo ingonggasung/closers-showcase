@@ -41,6 +41,10 @@ async function openPostModal(prefillCharacterId) {
     alert('로그인이 필요합니다.');
     return;
   }
+  if (currentUserProfile && currentUserProfile.blocked) {
+    alert('차단된 계정은 게시글을 등록할 수 없습니다.');
+    return;
+  }
   resetPostForm();
   postCharacterSelect.innerHTML = '<option value="">불러오는 중...</option>';
   postModal.hidden = false;
@@ -125,7 +129,8 @@ postSubmitBtn.addEventListener('click', async () => {
 });
 
 function updateFabVisibility(user) {
-  globalFab.hidden = !user;
+  globalFab.hidden = !user || !!(currentUserProfile && currentUserProfile.blocked);
 }
 authReady.then(updateFabVisibility);
 onAuthChange(updateFabVisibility);
+onProfileChange(() => updateFabVisibility(currentUser));

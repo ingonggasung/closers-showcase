@@ -43,6 +43,17 @@ button {
   color: #fff;
 }
 .pill.accent:hover { background: #ff5b93; }
+.pill.danger {
+  background: #ff3d3d22;
+  color: #ff6b6b;
+}
+.pill.danger:hover { background: #ff3d3d44; color: #ff8a8a; }
+.pill:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  background: var(--panel-2);
+  color: var(--text-dim);
+}
 
 .page {
   max-width: 900px;
@@ -383,6 +394,11 @@ button {
   color: var(--text);
   font-weight: 600;
   margin-right: 6px;
+}
+.report-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .slot-owner-tag {
   font-size: 10px;

@@ -6,8 +6,10 @@
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
-//   users:      { photoURL(Cloudinary URL), updatedAt } - doc id is the user's uid;
-//               each user may only read/write their own doc (see Firestore rules)
+//   users:      { photoURL(Cloudinary URL), warningCount, blocked, blockedAt, updatedAt } -
+//               doc id is the user's uid; each user may only read/write their own doc
+//               (see Firestore rules) - warningCount/blocked are only ever written by
+//               the admin, via warnUser/blockUser below
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
@@ -195,6 +197,39 @@ const DB = {
         { photoURL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
         { merge: true }
       );
+  },
+
+  // Adds one warning ("yellow card") to a user and auto-blocks them once
+  // they reach 3. Returns the resulting warning count.
+  async warnUser(uid) {
+    const ref = firestore.collection('users').doc(uid);
+    const newCount = await firestore.runTransaction(async (tx) => {
+      const doc = await tx.get(ref);
+      const current = (doc.exists && doc.data().warningCount) || 0;
+      const next = current + 1;
+      tx.set(ref, { warningCount: next }, { merge: true });
+      return next;
+    });
+    if (newCount >= 3) {
+      await DB.blockUser(uid);
+    }
+    return newCount;
+  },
+
+  // Blocks a user (they can no longer create posts, enforced by the
+  // Firestore rules on `slots`) and deletes every post they've made.
+  async blockUser(uid) {
+    await firestore
+      .collection('users')
+      .doc(uid)
+      .set(
+        { blocked: true, blockedAt: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+    const slotsSnap = await firestore.collection('slots').where('ownerId', '==', uid).get();
+    const batch = firestore.batch();
+    slotsSnap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
   },
 };
 
