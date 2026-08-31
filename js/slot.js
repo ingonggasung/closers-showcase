@@ -137,6 +137,12 @@ async function render() {
 
 function renderImages(owner) {
   imageRow.innerHTML = '';
+  // Rebuilding always marks index 0 as current below, but scrollLeft is a
+  // raw pixel value that doesn't necessarily reset with the content (e.g.
+  // clearing/rebuilding after a delete can leave it clamped to some
+  // non-zero leftover position instead of snapping back to 0) - force it
+  // so the "current" shot and the actual scroll position always agree.
+  imageRow.scrollLeft = 0;
   const images = currentSlot.images || [];
 
   images.forEach((src, i) => {
