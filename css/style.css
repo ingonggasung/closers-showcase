@@ -784,6 +784,13 @@ button {
   justify-content: center;
   font-size: 28px;
   scroll-snap-align: center;
+  transform: scale(0.82);
+  opacity: 0.55;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.image-row .add-shot.is-current {
+  transform: scale(1);
+  opacity: 1;
 }
 .image-row .add-shot:hover { border-color: var(--accent); color: var(--accent); }
 

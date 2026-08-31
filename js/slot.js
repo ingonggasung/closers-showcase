@@ -21,32 +21,45 @@ enableDragScroll(imageRow);
 
 // Shots vary in width (sized to each image's own aspect ratio), so "which
 // one is current" can't be read off scrollLeft/clientWidth like the
-// uniform-width home-feed carousel - instead, pick whichever shot's own
+// uniform-width home-feed carousel - instead, pick whichever element's own
 // center is closest to the viewport's center, matching the
-// scroll-snap-align: center behavior on .shot.
+// scroll-snap-align: center behavior on .shot/.add-shot.
+function distToViewCenter(el) {
+  const viewCenter = imageRow.scrollLeft + imageRow.clientWidth / 2;
+  const center = el.offsetLeft + el.offsetWidth / 2;
+  return Math.abs(center - viewCenter);
+}
+
 function currentImageIndex() {
   const shots = Array.from(imageRow.querySelectorAll('.shot'));
-  const viewCenter = imageRow.scrollLeft + imageRow.clientWidth / 2;
   let best = 0;
   let bestDist = Infinity;
   shots.forEach((el, i) => {
-    const center = el.offsetLeft + el.offsetWidth / 2;
-    const dist = Math.abs(center - viewCenter);
+    const dist = distToViewCenter(el);
     if (dist < bestDist) {
       bestDist = dist;
       best = i;
     }
   });
-  return best;
+  return { best, bestDist };
 }
 
+// The "+" add-photo tile also takes up a full row slot, so it needs the
+// same focus treatment as a photo - otherwise it always sits full-size
+// next to whichever photo IS scaled down, which reads as "two things are
+// in focus" and makes it unclear which photo you're actually looking at.
 function updateImageDots() {
   const shots = imageRow.querySelectorAll('.shot');
   if (shots.length === 0) return;
-  const idx = currentImageIndex();
-  shots.forEach((el, i) => el.classList.toggle('is-current', i === idx));
+  const addBtn = imageRow.querySelector('.add-shot');
+  const { best: idx, bestDist: shotDist } = currentImageIndex();
+  const addIsCurrent = !!addBtn && distToViewCenter(addBtn) < shotDist;
+
+  shots.forEach((el, i) => el.classList.toggle('is-current', !addIsCurrent && i === idx));
+  if (addBtn) addBtn.classList.toggle('is-current', addIsCurrent);
+
   const dots = imageRowDots.querySelectorAll('.dot');
-  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  dots.forEach((d, i) => d.classList.toggle('active', !addIsCurrent && i === idx));
 }
 
 // So the first/last shot can also be scrolled to a fully centered position
@@ -159,7 +172,7 @@ function renderImages(owner) {
 
   if (owner && images.length < MAX_IMAGES) {
     const addBtn = document.createElement('button');
-    addBtn.className = 'add-shot';
+    addBtn.className = 'add-shot' + (images.length === 0 ? ' is-current' : '');
     addBtn.textContent = '+';
     addBtn.title = `사진 추가 (${images.length}/${MAX_IMAGES})`;
     addBtn.addEventListener('click', () => imageInput.click());
