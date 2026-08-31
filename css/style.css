@@ -895,6 +895,48 @@ button {
   display: none;
 }
 .icon-preview.show { display: block; }
+.char-bulk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+.char-bulk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.char-bulk-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--panel-2);
+  flex-shrink: 0;
+}
+.char-bulk-row input[type="text"] {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.char-bulk-row .remove-row {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #000000aa;
+  color: #fff;
+  font-size: 12px;
+  line-height: 22px;
+  padding: 0;
+}
 .modal-actions {
   display: flex;
   justify-content: flex-end;

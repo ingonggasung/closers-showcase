@@ -38,11 +38,14 @@
 <div class="modal-overlay" id="char-modal" hidden>
   <div class="modal-box">
     <h3>캐릭터 추가</h3>
-    <label>캐릭터 이름</label>
-    <input type="text" id="char-name-input" placeholder="예: 서유리" />
-    <label>아이콘 이미지</label>
-    <input type="file" id="char-icon-input" accept="image/*" />
-    <img class="icon-preview" id="char-icon-preview" />
+    <label>아이콘 이미지 (여러 장 선택 시 한 번에 여러 캐릭터 추가)</label>
+    <input type="file" id="char-icon-input" accept="image/*" multiple />
+    <div id="char-single-fields">
+      <label>캐릭터 이름</label>
+      <input type="text" id="char-name-input" placeholder="예: 서유리" />
+      <img class="icon-preview" id="char-icon-preview" />
+    </div>
+    <div id="char-bulk-list" class="char-bulk-list"></div>
     <div class="modal-actions">
       <button class="pill" id="char-cancel">취소</button>
       <button class="pill accent" id="char-save">추가</button>

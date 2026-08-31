@@ -228,12 +228,73 @@ function updateFeedHeading() {
 
 feedSearchInput.addEventListener('input', applyFeedFilter);
 
+const charSingleFields = document.getElementById('char-single-fields');
+const charBulkList = document.getElementById('char-bulk-list');
+const charSaveBtn = document.getElementById('char-save');
+let pendingBulkEntries = []; // [{ file, name }] - used when multiple icons are picked at once
+
+// Best-effort guess at a character name from a reference-art filename like
+// "결전기컷_씬-윤리아.jpg" or "결전기컷_루시-Photoroom.png" -> takes the
+// last non-ASCII-only segment, since these filenames tend to end with the
+// character's name. Just a starting point - the admin can edit it before
+// saving.
+function guessNameFromFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, '');
+  const parts = base.split(/[_\-]+/).filter(Boolean);
+  const meaningful = parts.filter((p) => !/^[A-Za-z0-9]+$/.test(p));
+  return (meaningful.length ? meaningful[meaningful.length - 1] : parts[parts.length - 1]) || base;
+}
+
+function updateSaveButtonLabel() {
+  charSaveBtn.textContent = pendingBulkEntries.length > 1 ? `${pendingBulkEntries.length}명 추가` : '추가';
+}
+
+function renderBulkList() {
+  charBulkList.innerHTML = '';
+  pendingBulkEntries.forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'char-bulk-row';
+
+    const img = document.createElement('img');
+    img.className = 'char-bulk-thumb';
+    const reader = new FileReader();
+    reader.onload = () => (img.src = reader.result);
+    reader.readAsDataURL(entry.file);
+    row.appendChild(img);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = entry.name;
+    input.placeholder = '캐릭터 이름';
+    input.addEventListener('input', () => (entry.name = input.value));
+    row.appendChild(input);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-row';
+    removeBtn.title = '제외';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', () => {
+      pendingBulkEntries.splice(i, 1);
+      renderBulkList();
+      updateSaveButtonLabel();
+    });
+    row.appendChild(removeBtn);
+
+    charBulkList.appendChild(row);
+  });
+}
+
 function openModal() {
   nameInput.value = '';
   iconInput.value = '';
   iconPreview.src = '';
   iconPreview.classList.remove('show');
   pendingIconFile = null;
+  pendingBulkEntries = [];
+  charSingleFields.hidden = false;
+  charBulkList.innerHTML = '';
+  updateSaveButtonLabel();
   modal.hidden = false;
   nameInput.focus();
 }
@@ -243,15 +304,27 @@ function closeModal() {
 }
 
 iconInput.addEventListener('change', () => {
-  const file = iconInput.files[0];
-  if (!file) return;
-  pendingIconFile = file;
-  const reader = new FileReader();
-  reader.onload = () => {
-    iconPreview.src = reader.result;
-    iconPreview.classList.add('show');
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(iconInput.files || []);
+  if (files.length === 0) return;
+
+  if (files.length === 1) {
+    pendingIconFile = files[0];
+    pendingBulkEntries = [];
+    charSingleFields.hidden = false;
+    charBulkList.innerHTML = '';
+    const reader = new FileReader();
+    reader.onload = () => {
+      iconPreview.src = reader.result;
+      iconPreview.classList.add('show');
+    };
+    reader.readAsDataURL(pendingIconFile);
+  } else {
+    pendingIconFile = null;
+    pendingBulkEntries = files.map((file) => ({ file, name: guessNameFromFilename(file.name) }));
+    charSingleFields.hidden = true;
+    renderBulkList();
+  }
+  updateSaveButtonLabel();
 });
 
 document.getElementById('char-cancel').addEventListener('click', closeModal);
@@ -259,15 +332,37 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) closeModal();
 });
 
-document.getElementById('char-save').addEventListener('click', async () => {
+charSaveBtn.addEventListener('click', async () => {
+  if (pendingBulkEntries.length > 1) {
+    const entries = pendingBulkEntries.filter((entry) => entry.name.trim());
+    if (entries.length === 0) {
+      alert('이름을 입력해주세요.');
+      return;
+    }
+    charSaveBtn.disabled = true;
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      charSaveBtn.textContent = `추가 중... (${i + 1}/${entries.length})`;
+      try {
+        const iconUrl = await uploadImageToCloudinary(entry.file);
+        await DB.addCharacter({ name: entry.name.trim(), icon: iconUrl });
+      } catch (err) {
+        alert(`"${entry.name}" 추가에 실패했습니다: ${err.message}`);
+      }
+    }
+    charSaveBtn.disabled = false;
+    closeModal();
+    render();
+    return;
+  }
+
   const name = nameInput.value.trim();
   if (!name) {
     nameInput.focus();
     return;
   }
-  const saveBtn = document.getElementById('char-save');
-  saveBtn.disabled = true;
-  saveBtn.textContent = '추가 중...';
+  charSaveBtn.disabled = true;
+  charSaveBtn.textContent = '추가 중...';
   try {
     let iconUrl = null;
     if (pendingIconFile) {
@@ -279,8 +374,8 @@ document.getElementById('char-save').addEventListener('click', async () => {
   } catch (err) {
     alert('캐릭터 추가에 실패했습니다: ' + err.message);
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = '추가';
+    charSaveBtn.disabled = false;
+    updateSaveButtonLabel();
   }
 });
 
