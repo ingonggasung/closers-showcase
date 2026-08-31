@@ -27,9 +27,14 @@ function setFilterExpanded(expanded) {
     // Lock in the current real height first so the collapse transition
     // animates from an exact value instead of jumping straight to 0.
     filterSection.style.maxHeight = filterSection.scrollHeight + 'px';
-    requestAnimationFrame(() => {
-      filterSection.classList.add('collapsed');
-    });
+    // Force a synchronous layout flush so the browser registers that
+    // height as the transition's starting point before we change it
+    // again. A requestAnimationFrame alone isn't reliable for this right
+    // after page load (the main thread is busy with startup work), which
+    // is why the very first auto-collapse could skip the animation while
+    // later ones worked fine.
+    void filterSection.offsetHeight;
+    filterSection.classList.add('collapsed');
   }
 }
 
