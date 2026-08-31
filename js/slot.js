@@ -7,6 +7,7 @@ if (!slotId) {
 }
 
 const imageRow = document.getElementById('image-row');
+const imageRowDots = document.getElementById('image-row-dots');
 const imageInput = document.getElementById('image-input');
 const titleArea = document.getElementById('slot-title-area');
 const ownerLine = document.getElementById('slot-owner');
@@ -17,6 +18,49 @@ let currentSlot = null;
 
 mountAuthBar(document.getElementById('auth-bar'));
 enableDragScroll(imageRow);
+
+// Shots vary in width (sized to each image's own aspect ratio), so "which
+// one is current" can't be read off scrollLeft/clientWidth like the
+// uniform-width home-feed carousel - instead, pick whichever shot has the
+// most of its width actually visible in the current scroll viewport.
+// (Comparing left-edge distance to scrollLeft instead breaks right at the
+// end of the row: if the last shot can't scroll fully flush-left because
+// there isn't enough remaining width after it, scrollLeft gets clamped
+// short of its offset and the previous shot would look "closer" even
+// though the last one is what's actually filling most of the view.)
+function currentImageIndex() {
+  const shots = Array.from(imageRow.querySelectorAll('.shot'));
+  const viewLeft = imageRow.scrollLeft;
+  const viewRight = viewLeft + imageRow.clientWidth;
+  let best = 0;
+  let bestOverlap = -1;
+  shots.forEach((el, i) => {
+    const left = el.offsetLeft;
+    const right = left + el.offsetWidth;
+    const overlap = Math.min(right, viewRight) - Math.max(left, viewLeft);
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap;
+      best = i;
+    }
+  });
+  return best;
+}
+
+function updateImageDots() {
+  const dots = imageRowDots.querySelectorAll('.dot');
+  if (dots.length === 0) return;
+  const idx = currentImageIndex();
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
+let imageDotsRAF = null;
+imageRow.addEventListener('scroll', () => {
+  if (imageDotsRAF) cancelAnimationFrame(imageDotsRAF);
+  imageDotsRAF = requestAnimationFrame(() => {
+    imageDotsRAF = null;
+    updateImageDots();
+  });
+});
 
 document.getElementById('global-fab').addEventListener('click', () => {
   openPostModal(currentSlot ? currentSlot.characterId : characterId);
@@ -104,6 +148,15 @@ function renderImages(owner) {
     hint.className = 'empty-hint';
     hint.textContent = '등록된 사진이 없어요.';
     imageRow.appendChild(hint);
+  }
+
+  imageRowDots.innerHTML = '';
+  if (images.length > 1) {
+    images.forEach((_, i) => {
+      const d = document.createElement('span');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      imageRowDots.appendChild(d);
+    });
   }
 }
 
