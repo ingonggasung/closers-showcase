@@ -250,5 +250,7 @@ function renderAll() {
   });
 }
 
-authReady.then(renderAll);
+// Only onAuthChange, not also authReady.then(renderAll): see auth.js -
+// onAuthChange already fires once for the initial auth resolution, so
+// adding authReady.then(renderAll) here double-fired it on load.
 onAuthChange(renderAll);

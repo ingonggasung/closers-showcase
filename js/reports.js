@@ -87,10 +87,11 @@ function showLoadError() {
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
 }
 
-authReady.then(render).catch((err) => {
-  console.error(err);
-  showLoadError();
-});
+// Only onAuthChange, not also authReady.then(render): onAuthChange already
+// fires once for the initial auth resolution (see auth.js), so adding
+// authReady.then(render) here double-fired render() on every page load -
+// two overlapping async renders that could both append the same document
+// (this is what caused reports to show up twice).
 onAuthChange(() => render().catch((err) => {
   console.error(err);
   showLoadError();

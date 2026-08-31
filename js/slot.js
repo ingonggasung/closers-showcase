@@ -256,10 +256,9 @@ function showLoadError() {
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
 }
 
-authReady.then(render).catch((err) => {
-  console.error(err);
-  showLoadError();
-});
+// Only onAuthChange, not also authReady.then(render): see auth.js -
+// onAuthChange already fires once for the initial auth resolution, so
+// adding authReady.then(render) here double-fired render() on load.
 onAuthChange(() => render().catch((err) => {
   console.error(err);
   showLoadError();
