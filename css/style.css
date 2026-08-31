@@ -737,6 +737,10 @@ button {
   cursor: grabbing;
   scroll-snap-type: none;
 }
+.image-row.dragging-scroll .shot,
+.image-row.dragging-scroll .add-shot {
+  transition: none;
+}
 .image-row .shot {
   flex: 0 0 auto;
   height: min(48vh, 400px);
