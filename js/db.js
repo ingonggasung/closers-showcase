@@ -87,6 +87,15 @@ const DB = {
     return snap.docs.map(docToObj);
   },
 
+  // Just the newest post's timestamp (seconds), for the "new posts" badge.
+  // Cheap by design: limit(1) instead of pulling every slot.
+  async getLatestSlotTimestamp() {
+    const snap = await firestore.collection('slots').orderBy('createdAt', 'desc').limit(1).get();
+    if (snap.empty) return null;
+    const ts = snap.docs[0].data().createdAt;
+    return ts ? ts.seconds : null;
+  },
+
   async getSlot(id) {
     const doc = await firestore.collection('slots').doc(id).get();
     return doc.exists ? docToObj(doc) : null;
