@@ -638,14 +638,14 @@ button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: #000000aa;
   color: #fff;
-  font-size: 13px;
-  line-height: 24px;
+  font-size: 17px;
+  line-height: 32px;
   padding: 0;
   z-index: 2;
   opacity: 0.75;
