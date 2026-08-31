@@ -71,3 +71,20 @@ function escapeHtml(str) {
     "'": '&#39;',
   }[ch]));
 }
+
+// Scroll-to-top button, shown once the page is scrolled down. No-ops on
+// pages that don't include the button (id="scroll-top-btn").
+(function setupScrollTopButton() {
+  const btn = document.getElementById('scroll-top-btn');
+  if (!btn) return;
+  window.addEventListener(
+    'scroll',
+    () => {
+      btn.hidden = window.scrollY <= 10;
+    },
+    { passive: true }
+  );
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();

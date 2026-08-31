@@ -93,7 +93,7 @@ button {
 }
 #filter-section {
   overflow: hidden;
-  transition: max-height .25s ease, opacity .2s ease;
+  transition: max-height .5s cubic-bezier(0.4, 0, 0.2, 1), opacity .4s ease;
 }
 #filter-section.collapsed {
   max-height: 0 !important;
@@ -219,8 +219,29 @@ button {
 .fab:hover { background: #ff5b93; }
 .fab[hidden] { display: none; }
 
-.modal-box-wide {
-  width: min(92vw, 480px);
+.scroll-top-btn {
+  position: fixed;
+  right: 24px;
+  bottom: 92px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 18px;
+  line-height: 42px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
+  z-index: 40;
+  transition: background .15s, border-color .15s;
+}
+.scroll-top-btn:hover { background: #2f3038; border-color: var(--accent); }
+.scroll-top-btn[hidden] { display: none; }
+
+.modal-box.modal-box-wide {
+  width: min(92vw, 640px);
   max-height: 86vh;
   overflow-y: auto;
 }
