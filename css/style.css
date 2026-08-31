@@ -674,6 +674,7 @@ button {
   border-radius: 50%;
   background: var(--border);
   transition: background .15s, transform .15s;
+  cursor: pointer;
 }
 .carousel-dots .dot.active {
   background: var(--accent);

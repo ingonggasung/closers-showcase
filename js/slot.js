@@ -240,6 +240,16 @@ function renderImages(owner) {
     images.forEach((_, i) => {
       const d = document.createElement('span');
       d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.addEventListener('click', () => {
+        const shots = imageRow.querySelectorAll('.shot');
+        const target = shots[i];
+        if (!target) return;
+        const rowRect = imageRow.getBoundingClientRect();
+        const elRect = target.getBoundingClientRect();
+        const delta = elRect.left + elRect.width / 2 - (rowRect.left + rowRect.width / 2);
+        const max = imageRow.scrollWidth - imageRow.clientWidth;
+        animateScrollTo(imageRow, Math.max(0, Math.min(max, imageRow.scrollLeft + delta)));
+      });
       imageRowDots.appendChild(d);
     });
   }

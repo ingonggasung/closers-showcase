@@ -260,6 +260,12 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     const dotEls = slot.images.map((_, i) => {
       const d = document.createElement('span');
       d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't also trigger the card's click-to-open
+        const width = carousel.clientWidth || 1;
+        const max = carousel.scrollWidth - carousel.clientWidth;
+        animateScrollTo(carousel, Math.max(0, Math.min(max, i * width)));
+      });
       dots.appendChild(d);
       return d;
     });
