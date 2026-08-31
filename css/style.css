@@ -533,7 +533,7 @@ button {
   opacity: 0.75;
   transition: opacity .15s;
 }
-.slot-card:hover .slot-nav { opacity: 1; }
+.slot-card:hover .slot-nav:not(.nav-disabled) { opacity: 1; }
 .slot-nav.prev { left: 6px; }
 .slot-nav.next { right: 6px; }
 .slot-nav.nav-disabled {
