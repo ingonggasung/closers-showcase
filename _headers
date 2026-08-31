@@ -1,2 +1,3 @@
 /*
   Cache-Control: no-cache
+  Netlify-CDN-Cache-Control: no-cache
