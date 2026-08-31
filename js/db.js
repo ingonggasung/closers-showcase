@@ -6,10 +6,11 @@
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
-//   users:      { photoURL(Cloudinary URL), warningCount, blocked, blockedAt, updatedAt } -
-//               doc id is the user's uid; each user may only read/write their own doc
-//               (see Firestore rules) - warningCount/blocked are only ever written by
-//               the admin, via warnUser/blockUser below
+//   users:      { photoURL(Cloudinary URL), nickname, warningCount, blocked, blockedAt,
+//               updatedAt } - doc id is the user's uid; a user may only self-write
+//               photoURL/nickname/updatedAt on their own doc (see Firestore rules) -
+//               warningCount/blocked are only ever written by the admin, via
+//               warnUser/blockUser below
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
@@ -23,7 +24,7 @@ const DB = {
       name,
       icon: icon || null,
       ownerId: currentUser.uid,
-      ownerName: currentUser.displayName || currentUser.email || '사용자',
+      ownerName: displayName(currentUser),
       order: existing.size,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -66,7 +67,7 @@ const DB = {
       characterId,
       characterName: character.exists ? character.data().name : '',
       ownerId: currentUser.uid,
-      ownerName: currentUser.displayName || currentUser.email || '사용자',
+      ownerName: displayName(currentUser),
       title: (title || '').slice(0, 60),
       images: images || [],
       parts: parts || {},
@@ -177,7 +178,7 @@ const DB = {
     await firestore.collection('reports').add({
       slotId,
       reporterId: currentUser.uid,
-      reporterName: currentUser.displayName || currentUser.email || '사용자',
+      reporterName: displayName(currentUser),
       reason: (reason || '').slice(0, 300),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -204,6 +205,17 @@ const DB = {
       .doc(currentUser.uid)
       .set(
         { photoURL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+  },
+
+  async setNickname(nickname) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    await firestore
+      .collection('users')
+      .doc(currentUser.uid)
+      .set(
+        { nickname, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
         { merge: true }
       );
   },

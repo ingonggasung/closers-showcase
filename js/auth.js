@@ -56,10 +56,27 @@ function displayPhotoURL(user) {
   return (currentUserProfile && currentUserProfile.photoURL) || (user && user.photoURL) || null;
 }
 
+// The name to display/attribute posts to: a custom nickname they set,
+// falling back to their Google account name.
+function displayName(user) {
+  return (
+    (currentUserProfile && currentUserProfile.nickname) ||
+    (user && user.displayName) ||
+    (user && user.email) ||
+    '사용자'
+  );
+}
+
 async function changeProfilePhoto(file) {
   const url = await uploadImageToCloudinary(file);
   await DB.setUserPhoto(url);
   currentUserProfile = { ...(currentUserProfile || {}), photoURL: url };
+  profileChangeListeners.forEach((fn) => fn());
+}
+
+async function changeNickname(nickname) {
+  await DB.setNickname(nickname);
+  currentUserProfile = { ...(currentUserProfile || {}), nickname };
   profileChangeListeners.forEach((fn) => fn());
 }
 
@@ -91,7 +108,7 @@ function mountAuthBar(container) {
         <div class="auth-user">
           <button class="auth-profile-btn" id="auth-profile-btn">
             ${photo ? `<img src="${photo}" class="auth-avatar" alt="">` : ''}
-            <span class="auth-name">${user.displayName || user.email || '사용자'}</span>
+            <span class="auth-name">${escapeHtml(displayName(user))}</span>
             <span class="notif-dot" id="auth-notif-dot" hidden></span>
           </button>
           <button class="pill" id="auth-signout-btn">로그아웃</button>
@@ -122,6 +139,23 @@ function mountAuthBar(container) {
         const rect = e.currentTarget.getBoundingClientRect();
         const menuItems = [
           { label: '프로필 사진 변경', onClick: () => photoInput.click() },
+          {
+            label: '닉네임 변경',
+            onClick: async () => {
+              const input = prompt('사용할 닉네임을 입력해주세요 (최대 20자):', displayName(user));
+              if (input === null) return; // cancelled
+              const nickname = input.trim().slice(0, 20);
+              if (!nickname) {
+                alert('닉네임을 입력해주세요.');
+                return;
+              }
+              try {
+                await changeNickname(nickname);
+              } catch (err) {
+                alert('닉네임 변경에 실패했습니다: ' + err.message);
+              }
+            },
+          },
           { label: '스크랩', onClick: () => (location.href = 'scraps.html') },
           { label: '내 게시글 확인', onClick: () => (location.href = 'my-posts.html') },
         ];
