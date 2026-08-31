@@ -16,11 +16,40 @@ mountAuthBar(document.getElementById('auth-bar'));
 
 document.getElementById('global-fab').addEventListener('click', () => openPostModal());
 
+const FILTER_MAX_HEIGHT = 2000; // generous cap; real content settles well under this
+
+function setFilterExpanded(expanded) {
+  filterToggle.setAttribute('aria-expanded', String(expanded));
+  if (expanded) {
+    filterSection.classList.remove('collapsed');
+    filterSection.style.maxHeight = FILTER_MAX_HEIGHT + 'px';
+  } else {
+    // Lock in the current real height first so the collapse transition
+    // animates from an exact value instead of jumping straight to 0.
+    filterSection.style.maxHeight = filterSection.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      filterSection.classList.add('collapsed');
+    });
+  }
+}
+
 filterToggle.addEventListener('click', () => {
   const expanded = filterToggle.getAttribute('aria-expanded') === 'true';
-  filterToggle.setAttribute('aria-expanded', String(!expanded));
-  filterSection.hidden = expanded;
+  setFilterExpanded(!expanded);
 });
+
+// Auto-collapse the filter as soon as the user scrolls down to browse the
+// feed; the toggle bar itself stays pinned via .sticky-header so it's
+// always reachable to re-expand.
+window.addEventListener(
+  'scroll',
+  () => {
+    if (filterToggle.getAttribute('aria-expanded') === 'true' && window.scrollY > 10) {
+      setFilterExpanded(false);
+    }
+  },
+  { passive: true }
+);
 
 let suppressCharClick = false;
 grid.addEventListener('dragstart', (e) => {

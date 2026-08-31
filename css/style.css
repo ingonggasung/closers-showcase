@@ -51,16 +51,19 @@ button {
 }
 
 /* ---------- Header ---------- */
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.sticky-header {
   position: sticky;
   top: 0;
   z-index: 30;
   background: var(--bg);
-  padding: 14px 0;
+  padding-top: 14px;
   margin: -14px 0 8px;
+}
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
 }
 #auth-bar { margin-left: auto; }
 .filter-toggle-bar {
@@ -87,6 +90,15 @@ button {
 }
 .filter-toggle-bar[aria-expanded="false"] .chevron {
   transform: rotate(-90deg);
+}
+#filter-section {
+  overflow: hidden;
+  transition: max-height .25s ease, opacity .2s ease;
+}
+#filter-section.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
 }
 .top-bar h1 {
   font-size: 22px;
