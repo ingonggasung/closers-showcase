@@ -669,12 +669,23 @@ button {
   padding: 8px 0 0;
 }
 .carousel-dots .dot {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--border);
   transition: background .15s, transform .15s;
   cursor: pointer;
+}
+/* Invisible hit-area extension: a click landing just outside the visible
+   dot still lands on this pseudo-element (part of the same .dot for event
+   purposes), so it's caught by the dot's own click handler instead of
+   bubbling up as a card click - without changing the dot's visual size or
+   the gap between dots (this is out of layout flow). */
+.carousel-dots .dot::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
 }
 .carousel-dots .dot.active {
   background: var(--accent);
