@@ -665,7 +665,7 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 8px 0 0;
 }
 .carousel-dots .dot {
