@@ -21,25 +21,19 @@ enableDragScroll(imageRow);
 
 // Shots vary in width (sized to each image's own aspect ratio), so "which
 // one is current" can't be read off scrollLeft/clientWidth like the
-// uniform-width home-feed carousel - instead, pick whichever shot has the
-// most of its width actually visible in the current scroll viewport.
-// (Comparing left-edge distance to scrollLeft instead breaks right at the
-// end of the row: if the last shot can't scroll fully flush-left because
-// there isn't enough remaining width after it, scrollLeft gets clamped
-// short of its offset and the previous shot would look "closer" even
-// though the last one is what's actually filling most of the view.)
+// uniform-width home-feed carousel - instead, pick whichever shot's own
+// center is closest to the viewport's center, matching the
+// scroll-snap-align: center behavior on .shot.
 function currentImageIndex() {
   const shots = Array.from(imageRow.querySelectorAll('.shot'));
-  const viewLeft = imageRow.scrollLeft;
-  const viewRight = viewLeft + imageRow.clientWidth;
+  const viewCenter = imageRow.scrollLeft + imageRow.clientWidth / 2;
   let best = 0;
-  let bestOverlap = -1;
+  let bestDist = Infinity;
   shots.forEach((el, i) => {
-    const left = el.offsetLeft;
-    const right = left + el.offsetWidth;
-    const overlap = Math.min(right, viewRight) - Math.max(left, viewLeft);
-    if (overlap > bestOverlap) {
-      bestOverlap = overlap;
+    const center = el.offsetLeft + el.offsetWidth / 2;
+    const dist = Math.abs(center - viewCenter);
+    if (dist < bestDist) {
+      bestDist = dist;
       best = i;
     }
   });
@@ -47,10 +41,28 @@ function currentImageIndex() {
 }
 
 function updateImageDots() {
-  const dots = imageRowDots.querySelectorAll('.dot');
-  if (dots.length === 0) return;
+  const shots = imageRow.querySelectorAll('.shot');
+  if (shots.length === 0) return;
   const idx = currentImageIndex();
+  shots.forEach((el, i) => el.classList.toggle('is-current', i === idx));
+  const dots = imageRowDots.querySelectorAll('.dot');
   dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
+// So the first/last shot can also be scrolled to a fully centered position
+// (scroll-snap-align: center) instead of getting stuck against the row's
+// natural edge - classic "center mode" carousel padding, sized to each
+// edge item's own width since they vary.
+function updateEdgePadding() {
+  const children = Array.from(imageRow.children).filter(
+    (el) => el.classList.contains('shot') || el.classList.contains('add-shot')
+  );
+  if (children.length === 0) return;
+  const rowWidth = imageRow.clientWidth;
+  const first = children[0];
+  const last = children[children.length - 1];
+  first.style.marginLeft = `${Math.max(0, (rowWidth - first.offsetWidth) / 2)}px`;
+  last.style.marginRight = `${Math.max(0, (rowWidth - last.offsetWidth) / 2)}px`;
 }
 
 let imageDotsRAF = null;
@@ -116,8 +128,19 @@ function renderImages(owner) {
 
   images.forEach((src, i) => {
     const shot = document.createElement('div');
-    shot.className = 'shot';
-    shot.innerHTML = `<img src="${escapeHtml(src)}" alt="사진 ${i + 1}" draggable="false">`;
+    shot.className = 'shot' + (i === 0 ? ' is-current' : '');
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `사진 ${i + 1}`;
+    img.draggable = false;
+    // Widths are intrinsic (height:100%, width:auto), only known once each
+    // image decodes - recompute the center-mode edge padding and refresh
+    // which shot counts as "current" as they come in.
+    img.addEventListener('load', () => {
+      updateEdgePadding();
+      updateImageDots();
+    });
+    shot.appendChild(img);
     if (owner) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-shot';
@@ -158,6 +181,8 @@ function renderImages(owner) {
       imageRowDots.appendChild(d);
     });
   }
+
+  updateEdgePadding();
 }
 
 imageInput.addEventListener('change', async () => {
