@@ -42,7 +42,7 @@ function applySlotFilter() {
   const canPost = !!currentUser;
 
   const filtered = allSlots.filter((slot) => {
-    const title = `${slotDisplayTitle(slot)} ${slot.characterName || ''}`.toLowerCase();
+    const title = slotDisplayTitle(slot).toLowerCase();
     return q.length === 0 || title.includes(q);
   });
 

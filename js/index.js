@@ -162,7 +162,7 @@ function applyFeedFilter() {
   const q = feedSearchInput.value.trim().toLowerCase();
 
   const filtered = allSlots.filter((slot) => {
-    const title = `${slotDisplayTitle(slot)} ${slot.characterName || ''}`.toLowerCase();
+    const title = slotDisplayTitle(slot).toLowerCase();
     const matchesSearch = q.length === 0 || title.includes(q);
     const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(slot.characterId);
     return matchesSearch && matchesChar;
