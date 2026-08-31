@@ -86,6 +86,15 @@ imageRow.addEventListener('scroll', () => {
     updateImageDots();
   });
 });
+// Releasing a drag re-enables native scroll-snap (see the CSS), and that
+// snap-correction animation doesn't reliably fire one last 'scroll' event
+// exactly at its resting position - the row can settle a bit further than
+// whatever scrollLeft the last 'scroll' event reported, leaving the wrong
+// shot marked current. 'scrollend' fires once ALL scrolling (drag,
+// momentum, or native snap) has truly finished, so it catches that.
+if ('onscrollend' in window) {
+  imageRow.addEventListener('scrollend', updateImageDots);
+}
 
 document.getElementById('global-fab').addEventListener('click', () => {
   openPostModal(currentSlot ? currentSlot.characterId : characterId);
