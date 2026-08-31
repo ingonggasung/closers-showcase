@@ -160,8 +160,17 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     card.draggable = true;
   }
 
+  // Outer wrapper stays put (position:relative, doesn't scroll) so the nav
+  // arrows and delete button - absolutely positioned inside it - stay
+  // pinned to the visible edges. They used to live directly inside the
+  // scrolling track itself, which meant they scrolled off-screen along
+  // with the images (confirmed: the "prev" button measured at x:-98 once
+  // scrolled to frame 2, positioned relative to the pre-scroll layout).
+  const carouselWrap = document.createElement('div');
+  carouselWrap.className = 'slot-carousel';
+
   const carousel = document.createElement('div');
-  carousel.className = 'slot-carousel';
+  carousel.className = 'slot-carousel-track';
   carousel.draggable = false; // don't let the card's own reorder-drag start over the image area
 
   // Height per frame, in px, filled in as each image loads (index -> height).
@@ -173,7 +182,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     const width = carousel.clientWidth || card.clientWidth || 300;
     const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1.5;
     frameHeights[i] = width / ratio;
-    if (i === 0) carousel.style.height = `${frameHeights[0]}px`;
+    if (i === 0) carouselWrap.style.height = `${frameHeights[0]}px`;
   }
   function updateCarouselHeight() {
     if (frameHeights.length === 0) return;
@@ -185,7 +194,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     const h0 = frameHeights[i0];
     const h1 = frameHeights[i1];
     if (h0 == null) return;
-    carousel.style.height = `${h0 + ((h1 ?? h0) - h0) * t}px`;
+    carouselWrap.style.height = `${h0 + ((h1 ?? h0) - h0) * t}px`;
   }
 
   if (!slot.images || slot.images.length === 0) {
@@ -206,7 +215,8 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       carousel.appendChild(frame);
     });
   }
-  card.appendChild(carousel);
+  carouselWrap.appendChild(carousel);
+  card.appendChild(carouselWrap);
 
   if (slot.images && slot.images.length > 1) {
     enableDragScroll(carousel, { snapToFrames: true });
@@ -225,9 +235,9 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       const max = carousel.scrollWidth - carousel.clientWidth;
       animateScrollTo(carousel, Math.min(max, carousel.scrollLeft + carousel.clientWidth));
     });
-    carousel.appendChild(prev);
-    carousel.appendChild(next);
-    prev.hidden = true; // starts on frame 0: only the "next" arrow makes sense
+    carouselWrap.appendChild(prev);
+    carouselWrap.appendChild(next);
+    prev.classList.add('nav-disabled'); // starts on frame 0: only the "next" arrow makes sense
 
     const dots = document.createElement('div');
     dots.className = 'carousel-dots';
@@ -242,8 +252,14 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
-      prev.hidden = idx <= 0;
-      next.hidden = idx >= slot.images.length - 1;
+      // A CSS-only opacity/pointer-events toggle instead of the `hidden`
+      // attribute: toggling display:none<->block on an absolutely
+      // positioned nav button inside this masonry/live-height layout was
+      // observed leaving it positioned off-screen (x: -98) once shown
+      // again, seemingly a layout-caching quirk from re-entering flow.
+      // Keeping it always in normal flow sidesteps that entirely.
+      prev.classList.toggle('nav-disabled', idx <= 0);
+      next.classList.toggle('nav-disabled', idx >= slot.images.length - 1);
 
       // Deferred to the next frame instead of run synchronously here: mutating
       // height inside the scroll event's own callback can interrupt a
@@ -287,7 +303,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
         await onDelete(slot);
       }
     });
-    carousel.appendChild(del);
+    carouselWrap.appendChild(del);
   }
 
   const label = document.createElement('div');
