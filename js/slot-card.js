@@ -208,6 +208,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     });
     carousel.appendChild(prev);
     carousel.appendChild(next);
+    prev.hidden = true; // starts on frame 0: only the "next" arrow makes sense
 
     const dots = document.createElement('div');
     dots.className = 'carousel-dots';
@@ -221,6 +222,8 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+      prev.hidden = idx <= 0;
+      next.hidden = idx >= slot.images.length - 1;
 
       // Deferred to the next frame instead of run synchronously here: mutating
       // height inside the scroll event's own callback can interrupt a
