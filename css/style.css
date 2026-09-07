@@ -596,6 +596,15 @@ button {
   /* The big brand shows on every page, same spot as index.html - the small
      inline top-bar title steps aside everywhere for it. */
   .site-title { display: none; }
+  /* Pinned to the same screen corner on every page, instead of wherever
+     each page's own (differently-shifted/padded) .page happens to put it
+     in the normal flow. */
+  #auth-bar {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 20;
+  }
   .sidebar-brand {
     display: block;
     position: fixed;
