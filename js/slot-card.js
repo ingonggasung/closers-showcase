@@ -231,12 +231,20 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       const frame = document.createElement('div');
       frame.className = 'frame';
       const img = document.createElement('img');
+      // Listener attached before src is set: for an already-cached image,
+      // setting src can fire 'load' almost immediately, and attaching the
+      // listener a line later would miss it - especially likely here since
+      // repeat visits to the same feed hit the same cached image URLs.
+      img.addEventListener('load', syncCarouselHeight);
       img.src = src;
       img.alt = displayTitle;
       img.draggable = false;
-      img.addEventListener('load', syncCarouselHeight);
       frame.appendChild(img);
       carousel.appendChild(frame);
+      // Belt-and-suspenders for the cached case: if it somehow finished
+      // (synchronously or in a microtask) before the listener line above
+      // ran, this catches it once the frame is actually in the DOM.
+      if (img.complete) syncCarouselHeight();
     });
   }
   carouselWrap.appendChild(carousel);
