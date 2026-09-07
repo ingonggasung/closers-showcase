@@ -602,7 +602,10 @@ button {
   #auth-bar {
     position: fixed;
     top: 24px;
-    right: 24px;
+    /* .page's right edge sits at 24px (margin) + 20px (its own padding) =
+       44px in from the viewport - matching that here lines the login
+       widget up with the feed/search content's actual right edge below. */
+    right: 44px;
     z-index: 20;
   }
   .sidebar-brand {
