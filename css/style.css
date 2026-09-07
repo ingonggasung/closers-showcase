@@ -857,13 +857,15 @@ button {
   transition: none;
 }
 .image-row .shot {
-  /* Was width:auto (sized from the image's own ratio at a fixed height),
-     which let an unusually wide/panoramic photo blow past the screen width
-     and force horizontal scrolling just to see the edges of a single
-     image. Pinning width to the row itself and letting object-fit:contain
-     (below) handle the image's actual proportions means no image can ever
-     be wider than the screen. */
-  flex: 0 0 100%;
+  /* width:auto sizes each shot from the image's own ratio at the fixed
+     height below - that's what keeps the image edge-to-edge with no
+     letterbox bars, and what leaves room for neighboring shots to peek in
+     at the sides for multi-image posts. max-width is just a safety cap for
+     the rare panoramic photo that would otherwise render wider than the
+     screen - object-fit:contain on the img (below) keeps that one case
+     from being cropped or stretched. */
+  flex: 0 0 auto;
+  max-width: 100%;
   height: min(48vh, 400px);
   border-radius: var(--radius);
   overflow: hidden;
@@ -881,8 +883,9 @@ button {
 }
 .image-row .shot img {
   display: block;
-  width: 100%;
   height: 100%;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 .image-row .shot .remove-shot {
