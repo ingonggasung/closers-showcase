@@ -37,10 +37,7 @@ function slotMatchesQuery(slot, query, field) {
 }
 
 // Scrolls `el` to `targetLeft` by directly driving scrollLeft every frame,
-// instead of the browser's native scrollBy({behavior:'smooth'}). Native
-// smooth-scroll gets interrupted/reset when something changes the element's
-// layout (e.g. height) mid-animation from inside a 'scroll' handler, which
-// is exactly what the live-resizing carousel needs to do.
+// instead of the browser's native scrollBy({behavior:'smooth'}).
 //
 // Tracks one "current animation" token per element so a new call always
 // supersedes an in-flight one instead of both fighting over scrollLeft -
@@ -205,44 +202,19 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   carousel.className = 'slot-carousel-track';
   carousel.draggable = false; // don't let the card's own reorder-drag start over the image area
 
-  // Height per frame, in px, filled in as each image loads (index -> height).
-  // The carousel's own height is interpolated live between these as you
-  // scroll/swipe, so it tracks whichever image is currently in view instead
-  // of staying pinned to the tallest one.
-  const frameHeights = [];
-  function applyFrameHeight(i, img) {
-    const width = carousel.clientWidth || card.clientWidth || 300;
-    const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1.5;
-    frameHeights[i] = width / ratio;
-    if (i === 0) carouselWrap.style.height = `${frameHeights[0]}px`;
-  }
-  function updateCarouselHeight() {
-    if (frameHeights.length === 0) return;
-    const width = carousel.clientWidth || 1;
-    const raw = carousel.scrollLeft / width;
-    const i0 = Math.max(0, Math.min(frameHeights.length - 1, Math.floor(raw)));
-    const i1 = Math.min(i0 + 1, frameHeights.length - 1);
-    const t = raw - i0;
-    const h0 = frameHeights[i0];
-    const h1 = frameHeights[i1];
-    if (h0 == null) return;
-    carouselWrap.style.height = `${h0 + ((h1 ?? h0) - h0) * t}px`;
-  }
-
   if (!slot.images || slot.images.length === 0) {
     const frame = document.createElement('div');
     frame.className = 'frame empty';
     frame.textContent = '이미지 없음';
     carousel.appendChild(frame);
   } else {
-    slot.images.forEach((src, i) => {
+    slot.images.forEach((src) => {
       const frame = document.createElement('div');
       frame.className = 'frame';
       const img = document.createElement('img');
       img.src = src;
       img.alt = displayTitle;
       img.draggable = false;
-      img.addEventListener('load', () => applyFrameHeight(i, img));
       frame.appendChild(img);
       carousel.appendChild(frame);
     });
@@ -285,29 +257,18 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       dots.appendChild(d);
       return d;
     });
-    let heightRAF = null;
     let settleTimer = null;
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
       // A CSS-only opacity/pointer-events toggle instead of the `hidden`
       // attribute: toggling display:none<->block on an absolutely
-      // positioned nav button inside this masonry/live-height layout was
-      // observed leaving it positioned off-screen (x: -98) once shown
-      // again, seemingly a layout-caching quirk from re-entering flow.
-      // Keeping it always in normal flow sidesteps that entirely.
+      // positioned nav button inside this masonry layout was observed
+      // leaving it positioned off-screen (x: -98) once shown again,
+      // seemingly a layout-caching quirk from re-entering flow. Keeping it
+      // always in normal flow sidesteps that entirely.
       prev.classList.toggle('nav-disabled', idx <= 0);
       next.classList.toggle('nav-disabled', idx >= slot.images.length - 1);
-
-      // Deferred to the next frame instead of run synchronously here: mutating
-      // height inside the scroll event's own callback can interrupt a
-      // browser-driven scroll animation in progress (native smooth-scroll or
-      // touch momentum), which is exactly the bug this avoids.
-      if (heightRAF) cancelAnimationFrame(heightRAF);
-      heightRAF = requestAnimationFrame(() => {
-        heightRAF = null;
-        updateCarouselHeight();
-      });
 
       // Touch swipes scroll natively (enableDragScroll only handles mouse),
       // so there's no drag-end hook to snap them - CSS scroll-snap would

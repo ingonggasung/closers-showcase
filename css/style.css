@@ -593,11 +593,12 @@ button {
      900px column" - .page below expands to fill everything after it, so
      the space that used to sit empty on the right is actually used. */
   #filter-toggle { display: none; }
-  /* The small top-bar title would be redundant next to the big sidebar
-     brand below, so it steps aside for desktop only (every page has both,
-     so this is unscoped to keep the swap consistent site-wide). */
-  .site-title { display: none; }
-  .sidebar-brand {
+  /* Everything below only applies to the page that actually has the
+     character filter (index.html) - other pages have nothing to fill that
+     reserved gutter with, so they just stay centered full-width instead of
+     leaving it empty. */
+  body:has(#filter-section) .site-title { display: none; }
+  body:has(#filter-section) .sidebar-brand {
     display: block;
     position: fixed;
     top: 24px;
@@ -619,7 +620,7 @@ button {
     max-height: calc(100vh - 178px);
     overflow-y: auto;
   }
-  .page {
+  body:has(#filter-section) .page {
     max-width: none;
     margin: 0 24px 0 calc(24px + 365px + 24px);
   }
@@ -686,12 +687,16 @@ button {
 .slot-carousel {
   position: relative;
   width: 100%;
-  min-height: 150px;
+  /* No fixed/aspect-ratio height here on purpose - the frame img below is
+     width:100%; height:auto, so this wrapper's height just follows
+     whichever image is showing, same as the card width is fixed but each
+     post's image keeps its own true proportions instead of being cropped
+     to a uniform box. */
+  min-height: 150px; /* floor so the card doesn't collapse before the image loads */
   overflow: hidden;
 }
 .slot-carousel-track {
   width: 100%;
-  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
@@ -716,8 +721,7 @@ button {
 }
 .slot-carousel-track .frame img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
   display: block;
 }
 .slot-carousel-track .frame.empty {
@@ -845,7 +849,13 @@ button {
   transition: none;
 }
 .image-row .shot {
-  flex: 0 0 auto;
+  /* Was width:auto (sized from the image's own ratio at a fixed height),
+     which let an unusually wide/panoramic photo blow past the screen width
+     and force horizontal scrolling just to see the edges of a single
+     image. Pinning width to the row itself and letting object-fit:contain
+     (below) handle the image's actual proportions means no image can ever
+     be wider than the screen. */
+  flex: 0 0 100%;
   height: min(48vh, 400px);
   border-radius: var(--radius);
   overflow: hidden;
@@ -863,8 +873,9 @@ button {
 }
 .image-row .shot img {
   display: block;
+  width: 100%;
   height: 100%;
-  width: auto;
+  object-fit: contain;
 }
 .image-row .shot .remove-shot {
   position: absolute;
