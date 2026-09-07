@@ -194,7 +194,7 @@ async function renderFeed() {
   applyFeedFilter();
 }
 
-async function applyFeedFilter() {
+function applyFeedFilter() {
   const q = feedSearchInput.value;
   const field = feedSearchField.value;
 
@@ -209,7 +209,7 @@ async function applyFeedFilter() {
     return;
   }
 
-  await renderSlotMasonry(feedGrid, filtered, getMasonryColumns(), {
+  renderSlotMasonry(feedGrid, filtered, getMasonryColumns(), {
     showCharacterTag: true,
     onDelete: async (s) => {
       await DB.deleteSlot(s.id);

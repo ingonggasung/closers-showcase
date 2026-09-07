@@ -35,17 +35,17 @@ async function renderHeader() {
 async function render() {
   await renderHeader();
   allSlots = await DB.getSlotsByCharacter(characterId);
-  await applySlotFilter();
+  applySlotFilter();
 }
 
-async function applySlotFilter() {
+function applySlotFilter() {
   const q = slotSearchInput.value;
   const field = slotSearchField.value;
   const canPost = !!currentUser;
 
   const filtered = allSlots.filter((slot) => slotMatchesQuery(slot, q, field));
 
-  const masonry = await renderSlotMasonry(slotGrid, filtered, getMasonryColumns(), {
+  const masonry = renderSlotMasonry(slotGrid, filtered, getMasonryColumns(), {
     draggable: true,
     onDelete: async (s) => {
       await DB.deleteSlot(s.id);

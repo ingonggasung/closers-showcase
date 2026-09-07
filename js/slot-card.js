@@ -147,43 +147,16 @@ function getMasonryColumns() {
   return w < 900 ? 3 : 5;
 }
 
-// Rough card-height estimate at column width `width`, from the slot's
-// cover image's own aspect ratio (a generic fallback ratio if there's no
-// image, or it fails to load). Used only to decide which column a card
-// should go in - real DOM height isn't known at insertion time since the
-// image hasn't loaded yet, and by the time it does, the grid has already
-// been built and placement decisions are already made.
-function estimateSlotHeight(slot, width) {
-  const FALLBACK_RATIO = 1.5; // matches the "no photo" placeholder's 3:2 box
-  const LABEL_HEIGHT = 34; // rough space for the title/byline bar below the image
-  if (!slot.images || slot.images.length === 0) {
-    return Promise.resolve(width / FALLBACK_RATIO + LABEL_HEIGHT);
-  }
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : FALLBACK_RATIO;
-      resolve(width / ratio + LABEL_HEIGHT);
-    };
-    img.onerror = () => resolve(width / FALLBACK_RATIO + LABEL_HEIGHT);
-    img.src = slot.images[0];
-  });
-}
-
 // CSS `column-count` can silently collapse to fewer columns when there's
 // little/uneven content (column-fill: balance). Building N real column
 // elements and appending into them guarantees the column count.
 //
-// Each card goes into whichever column is running shortest by *estimated*
-// height (see above), not round-robin by index - card heights vary a lot
-// (different image ratios, multi- vs single-image posts), so blindly
-// alternating columns could stack several short cards in one column while
-// another gets the tall ones, leaving a big gap under the short column
-// once the feed runs out of cards.
-async function renderSlotMasonry(container, slots, columns, cardOptions) {
+// Cards fill the columns round-robin, which keeps reading order intact:
+// slots arrive newest-first, so the newest sits leftmost and each older
+// one goes to its right, wrapping down to the next row.
+function renderSlotMasonry(container, slots, columns, cardOptions) {
   container.innerHTML = '';
   const cols = [];
-  const colHeights = new Array(columns).fill(0);
   for (let i = 0; i < columns; i++) {
     const col = document.createElement('div');
     col.className = 'masonry-col';
@@ -191,30 +164,17 @@ async function renderSlotMasonry(container, slots, columns, cardOptions) {
     cols.push(col);
   }
 
-  const colWidth = (container.clientWidth || 300) / columns;
-  const estimates = await Promise.all(slots.map((slot) => estimateSlotHeight(slot, colWidth)));
-
   slots.forEach((slot, i) => {
-    const card = buildSlotCard(slot, cardOptions);
-    let shortest = 0;
-    for (let c = 1; c < columns; c++) {
-      if (colHeights[c] < colHeights[shortest]) shortest = c;
-    }
-    cols[shortest].appendChild(card);
-    colHeights[shortest] += estimates[i];
+    cols[i % columns].appendChild(buildSlotCard(slot, cardOptions));
   });
 
+  let nextIndex = slots.length;
   return {
     // For an extra tile that isn't one of `slots` (character.html's "add
-    // new post" card) - same shortest-column placement, with a rough fixed
-    // height estimate since there's no image to measure it by.
-    addExtra(el, estimatedHeight = 150) {
-      let shortest = 0;
-      for (let c = 1; c < columns; c++) {
-        if (colHeights[c] < colHeights[shortest]) shortest = c;
-      }
-      cols[shortest].appendChild(el);
-      colHeights[shortest] += estimatedHeight;
+    // new post" card) - just continues the same round-robin.
+    addExtra(el) {
+      cols[nextIndex % columns].appendChild(el);
+      nextIndex++;
     },
   };
 }

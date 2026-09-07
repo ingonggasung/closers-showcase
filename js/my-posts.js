@@ -14,7 +14,7 @@ async function render() {
     return;
   }
 
-  await renderSlotMasonry(myPostsGrid, slots, getMasonryColumns(), {
+  renderSlotMasonry(myPostsGrid, slots, getMasonryColumns(), {
     showCharacterTag: true,
     onDelete: async (s) => {
       await DB.deleteSlot(s.id);

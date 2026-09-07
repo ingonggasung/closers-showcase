@@ -14,7 +14,7 @@ async function render() {
     return;
   }
 
-  await renderSlotMasonry(scrapGrid, slots, getMasonryColumns(), {
+  renderSlotMasonry(scrapGrid, slots, getMasonryColumns(), {
     showCharacterTag: true,
     onDelete: async (s) => {
       await DB.deleteSlot(s.id);
