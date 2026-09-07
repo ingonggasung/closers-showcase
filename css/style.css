@@ -593,12 +593,10 @@ button {
      900px column" - .page below expands to fill everything after it, so
      the space that used to sit empty on the right is actually used. */
   #filter-toggle { display: none; }
-  /* Everything below only applies to the page that actually has the
-     character filter (index.html) - other pages have nothing to fill that
-     reserved gutter with, so they just stay centered full-width instead of
-     leaving it empty. */
-  body:has(#filter-section) .site-title { display: none; }
-  body:has(#filter-section) .sidebar-brand {
+  /* The big brand shows on every page, same spot as index.html - the small
+     inline top-bar title steps aside everywhere for it. */
+  .site-title { display: none; }
+  .sidebar-brand {
     display: block;
     position: fixed;
     top: 24px;
@@ -612,6 +610,12 @@ button {
   }
   .sidebar-brand .accent-part { color: var(--accent); }
   .sidebar-brand:hover .accent-part { color: #ff5b93; }
+  /* Every page's content sits in the same horizontal band as the brand, so
+     it needs enough top clearance to start below it instead of underneath
+     it - except index.html, which shifts its content sideways instead (see
+     below) and never shares that horizontal band with the brand at all. */
+  .page { padding-top: 150px; }
+
   #filter-section {
     position: fixed;
     top: 150px;
@@ -620,9 +624,13 @@ button {
     max-height: calc(100vh - 178px);
     overflow-y: auto;
   }
+  /* Only index.html has something (the character filter) to fill the left
+     gutter, so only it reserves horizontal space for it - other pages stay
+     centered using the full width, just pushed down past the brand. */
   body:has(#filter-section) .page {
     max-width: none;
     margin: 0 24px 0 calc(24px + 365px + 24px);
+    padding-top: 28px;
   }
   #filter-section::before {
     content: '캐릭터';
