@@ -639,7 +639,10 @@ button {
   body:has(#filter-section) .page {
     max-width: none;
     margin: 0 24px 0 calc(24px + 365px + 24px);
-    padding-top: 28px;
+    /* Needs more than the base 28px now that the login/profile widget is
+       fixed in the same top-right corner - otherwise the feed heading and
+       search box start almost right underneath it. */
+    padding-top: 50px;
   }
   #filter-section::before {
     content: '캐릭터';
