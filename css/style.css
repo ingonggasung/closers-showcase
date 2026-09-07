@@ -710,12 +710,16 @@ button {
 .slot-carousel {
   position: relative;
   width: 100%;
-  /* No fixed/aspect-ratio height here on purpose - the frame img below is
-     width:100%; height:auto, so this wrapper's height just follows
-     whichever image is showing, same as the card width is fixed but each
-     post's image keeps its own true proportions instead of being cropped
-     to a uniform box. */
-  min-height: 150px; /* floor so the card doesn't collapse before the image loads */
+  /* No fixed height, aspect-ratio, or min-height here on purpose - the
+     frame img below is width:100%; height:auto, so this wrapper's height
+     just follows whichever image is showing, same as the card width is
+     fixed but each post's image keeps its own true proportions instead of
+     being cropped to a uniform box.
+     min-height in particular must stay off: CSS resolves min-height over
+     height, so a floor here silently overrides the exact per-image height
+     the carousel sets, padding every image shorter than the floor with
+     dead space below it. That's invisible on desktop (wide columns ->
+     tall images) but hits nearly every card on mobile's narrow ones. */
   overflow: hidden;
 }
 .slot-carousel-track {
