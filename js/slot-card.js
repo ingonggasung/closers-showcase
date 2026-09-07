@@ -202,6 +202,25 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   carousel.className = 'slot-carousel-track';
   carousel.draggable = false; // don't let the card's own reorder-drag start over the image area
 
+  // Each frame's img is width:100%/height:auto (its own true ratio, EXIF
+  // orientation and all - the browser handles that correctly on its own).
+  // But the track is a flex row holding every frame at once, so its height
+  // defaults to the TALLEST frame, and every shorter frame gets stretched
+  // to match with the image just centered inside it - visible as dead
+  // space above/below any image that isn't the tallest one in a
+  // multi-image post. Measuring the currently-visible frame's *rendered*
+  // img height (not recomputing it from naturalWidth/naturalHeight - that
+  // math is what caused the previous version of this to size things wrong)
+  // and pinning the wrapper to exactly that closes the gap.
+  function syncCarouselHeight() {
+    const width = carousel.clientWidth || 1;
+    const idx = Math.round(carousel.scrollLeft / width);
+    const img = carousel.children[idx] && carousel.children[idx].querySelector('img');
+    if (img && img.complete && img.naturalHeight) {
+      carouselWrap.style.height = `${img.getBoundingClientRect().height}px`;
+    }
+  }
+
   if (!slot.images || slot.images.length === 0) {
     const frame = document.createElement('div');
     frame.className = 'frame empty';
@@ -215,6 +234,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       img.src = src;
       img.alt = displayTitle;
       img.draggable = false;
+      img.addEventListener('load', syncCarouselHeight);
       frame.appendChild(img);
       carousel.appendChild(frame);
     });
@@ -257,6 +277,7 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       dots.appendChild(d);
       return d;
     });
+    let heightRAF = null;
     let settleTimer = null;
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
@@ -269,6 +290,16 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
       // always in normal flow sidesteps that entirely.
       prev.classList.toggle('nav-disabled', idx <= 0);
       next.classList.toggle('nav-disabled', idx >= slot.images.length - 1);
+
+      // Deferred to the next frame instead of run synchronously here: mutating
+      // height inside the scroll event's own callback can interrupt a
+      // browser-driven scroll animation in progress (native smooth-scroll or
+      // touch momentum).
+      if (heightRAF) cancelAnimationFrame(heightRAF);
+      heightRAF = requestAnimationFrame(() => {
+        heightRAF = null;
+        syncCarouselHeight();
+      });
 
       // Touch swipes scroll natively (enableDragScroll only handles mouse),
       // so there's no drag-end hook to snap them - CSS scroll-snap would

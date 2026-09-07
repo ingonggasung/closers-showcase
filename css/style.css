@@ -723,6 +723,13 @@ button {
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
+  /* Default (stretch) would force every frame to the row's full height -
+     the tallest image among them - and then center each shorter image
+     inside that, which is exactly the dead-space-around-the-image problem
+     this is meant to avoid. Top-aligning keeps each frame at its own
+     image's true height so the JS height sync (see buildSlotCard) clips
+     only the taller off-screen siblings, never the current image itself. */
+  align-items: flex-start;
   scrollbar-width: none;
   background: #101114;
   cursor: grab;
