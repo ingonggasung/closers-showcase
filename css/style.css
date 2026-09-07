@@ -614,7 +614,7 @@ button {
      it needs enough top clearance to start below it instead of underneath
      it - except index.html, which shifts its content sideways instead (see
      below) and never shares that horizontal band with the brand at all. */
-  .page { padding-top: 150px; }
+  .page { padding-top: 75px; }
 
   #filter-section {
     position: fixed;
