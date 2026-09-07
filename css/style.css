@@ -77,6 +77,19 @@ button {
   padding-bottom: 14px;
 }
 #auth-bar { margin-left: auto; }
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.site-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.site-title:hover { color: var(--accent); }
 .filter-toggle-bar {
   display: flex;
   align-items: center;
@@ -157,14 +170,26 @@ button {
   align-items: center;
   gap: 8px;
 }
+.search-field-select {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.search-field-select:focus { outline: none; border-color: var(--accent); }
 .search-input {
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text);
-  padding: 7px 14px;
-  font-size: 12px;
-  min-width: 160px;
+  padding: 9px 18px;
+  font-size: 16px;
+  min-width: 210px;
+  flex: 1;
 }
 .search-input::placeholder { color: var(--text-dim); }
 .search-input:focus { outline: none; border-color: var(--accent); }
@@ -558,6 +583,72 @@ button {
   font-size: 13px;
   text-align: center;
   padding: 30px 10px;
+}
+
+.sidebar-brand { display: none; }
+
+/* ---------- Desktop: filter moved into left-side gutter ---------- */
+@media (min-width: 1300px) {
+  /* Sidebar is now a fixed width instead of "whatever's left of a centered
+     900px column" - .page below expands to fill everything after it, so
+     the space that used to sit empty on the right is actually used. */
+  #filter-toggle { display: none; }
+  /* The small top-bar title would be redundant next to the big sidebar
+     brand below, so it steps aside for desktop only (every page has both,
+     so this is unscoped to keep the swap consistent site-wide). */
+  .site-title { display: none; }
+  .sidebar-brand {
+    display: block;
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    width: 365px;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: .3px;
+    color: var(--text);
+  }
+  .sidebar-brand .accent-part { color: var(--accent); }
+  .sidebar-brand:hover .accent-part { color: #ff5b93; }
+  #filter-section {
+    position: fixed;
+    top: 150px;
+    left: 24px;
+    width: 365px;
+    max-height: calc(100vh - 178px);
+    overflow-y: auto;
+  }
+  .page {
+    max-width: none;
+    margin: 0 24px 0 calc(24px + 365px + 24px);
+  }
+  #filter-section::before {
+    content: '캐릭터';
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  /* Always keep 6 columns here; icons shrink to fit whatever width
+     the gutter ends up being rather than reflowing to fewer columns. */
+  #filter-section .char-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    padding: 12px;
+  }
+  #filter-section .char-avatar {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    font-size: 11px;
+  }
+  #filter-section .char-name,
+  #filter-section .char-owner {
+    max-width: 100%;
+    font-size: 9px;
+  }
 }
 
 /* ---------- Slot grid (character page) ---------- */
@@ -999,7 +1090,7 @@ button {
   .post-parts-grid { grid-template-columns: 1fr; }
   .section-head { flex-wrap: wrap; row-gap: 8px; }
   .section-actions { width: 100%; }
-  .search-input { min-width: 0; width: 100%; }
+  .search-input { min-width: 0; }
   .fab { right: 16px; bottom: 16px; }
   .scroll-top-btn { right: 16px; bottom: 76px; }
 }

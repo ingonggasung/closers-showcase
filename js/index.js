@@ -5,6 +5,7 @@ const iconInput = document.getElementById('char-icon-input');
 const iconPreview = document.getElementById('char-icon-preview');
 const feedGrid = document.getElementById('feed-grid');
 const feedSearchInput = document.getElementById('feed-search');
+const feedSearchField = document.getElementById('feed-search-field');
 const feedHeading = document.getElementById('feed-heading');
 const filterToggle = document.getElementById('filter-toggle');
 const filterSection = document.getElementById('filter-section');
@@ -51,9 +52,15 @@ filterToggle.addEventListener('click', () => {
 // falls back to the original "collapse on the first bit of scrolling"
 // behavior via the 10px floor. The toggle bar itself stays pinned via
 // .sticky-header so it's always reachable to re-expand.
+// Above this width the filter lives in the side gutter (see #filter-section
+// in style.css) instead of the document flow, so it never needs to make
+// room for the feed and should just stay put while scrolling.
+const DESKTOP_SIDEBAR_QUERY = '(min-width: 1300px)';
+
 window.addEventListener(
   'scroll',
   () => {
+    if (window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches) return;
     if (filterToggle.getAttribute('aria-expanded') !== 'true') return;
     const feedTop = feedHeading.getBoundingClientRect().top + window.scrollY;
     const boundary = Math.max(10, feedTop - window.innerHeight);
@@ -147,8 +154,26 @@ async function renderCharacters() {
 
 let allSlots = [];
 
+// TEMP: local-only layout testing aid. Clones the first real slot into 20
+// fake ones so the feed has enough height to test scroll/sidebar behavior,
+// without ever writing anything to Firestore. Gated on hostname so it can
+// never fire for a real visitor even if this file ships as-is; remove once
+// the layout work is done.
+const LOCAL_DUMMY_COUNT = 20;
+function withLocalDummies(slots) {
+  const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (!isLocal || slots.length === 0) return slots;
+  const base = slots[0];
+  const dummies = Array.from({ length: LOCAL_DUMMY_COUNT }, (_, i) => ({
+    ...base,
+    id: `dummy-${i + 1}`,
+    title: `더미 ${i + 1}`,
+  }));
+  return [...dummies, ...slots];
+}
+
 async function renderFeed() {
-  allSlots = await DB.getAllSlots();
+  allSlots = withLocalDummies(await DB.getAllSlots());
 
   // Visiting the feed counts as having seen the newest post - clears the
   // favicon's new-post dot (see utils.js).
@@ -170,11 +195,11 @@ async function renderFeed() {
 }
 
 function applyFeedFilter() {
-  const q = feedSearchInput.value.trim().toLowerCase();
+  const q = feedSearchInput.value;
+  const field = feedSearchField.value;
 
   const filtered = allSlots.filter((slot) => {
-    const title = slotDisplayTitle(slot).toLowerCase();
-    const matchesSearch = q.length === 0 || title.includes(q);
+    const matchesSearch = slotMatchesQuery(slot, q, field);
     const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(slot.characterId);
     return matchesSearch && matchesChar;
   });
@@ -227,6 +252,7 @@ function updateFeedHeading() {
 }
 
 feedSearchInput.addEventListener('input', applyFeedFilter);
+feedSearchField.addEventListener('change', applyFeedFilter);
 
 const charSingleFields = document.getElementById('char-single-fields');
 const charBulkList = document.getElementById('char-bulk-list');

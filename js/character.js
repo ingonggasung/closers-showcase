@@ -7,6 +7,7 @@ if (!characterId) {
 
 const slotGrid = document.getElementById('slot-grid');
 const slotSearchInput = document.getElementById('slot-search');
+const slotSearchField = document.getElementById('slot-search-field');
 
 let character = null;
 let allSlots = [];
@@ -38,13 +39,11 @@ async function render() {
 }
 
 function applySlotFilter() {
-  const q = slotSearchInput.value.trim().toLowerCase();
+  const q = slotSearchInput.value;
+  const field = slotSearchField.value;
   const canPost = !!currentUser;
 
-  const filtered = allSlots.filter((slot) => {
-    const title = slotDisplayTitle(slot).toLowerCase();
-    return q.length === 0 || title.includes(q);
-  });
+  const filtered = allSlots.filter((slot) => slotMatchesQuery(slot, q, field));
 
   const masonry = renderMasonryGrid(slotGrid, getMasonryColumns());
 
@@ -76,6 +75,7 @@ enableDragReorder(slotGrid, '[data-role="item"]', async () => {
 });
 
 slotSearchInput.addEventListener('input', applySlotFilter);
+slotSearchField.addEventListener('change', applySlotFilter);
 window.addEventListener('resize', debounce(() => applySlotFilter(), 200));
 
 function showLoadError() {

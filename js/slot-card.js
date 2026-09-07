@@ -18,6 +18,24 @@ function slotDisplayTitle(slot) {
   return slot.title || slotSummary(slot);
 }
 
+// Feed/slot-grid search, by field: 'title' (default), 'author' (owner
+// nickname), or 'costume' (matches if ANY costume/accessory part value
+// contains the query - so searching a part name finds every post that has
+// it, however many parts get filled in later).
+function slotMatchesQuery(slot, query, field) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (field === 'author') {
+    return (slot.ownerName || '').toLowerCase().includes(q);
+  }
+  if (field === 'costume') {
+    return Object.values(slot.parts || {}).some(
+      (v) => typeof v === 'string' && v.toLowerCase().includes(q)
+    );
+  }
+  return slotDisplayTitle(slot).toLowerCase().includes(q);
+}
+
 // Scrolls `el` to `targetLeft` by directly driving scrollLeft every frame,
 // instead of the browser's native scrollBy({behavior:'smooth'}). Native
 // smooth-scroll gets interrupted/reset when something changes the element's
@@ -129,9 +147,7 @@ function enableDragScroll(el, { snapToFrames = false } = {}) {
 // cards aren't squeezed together on narrow/mobile screens.
 function getMasonryColumns() {
   const w = window.innerWidth;
-  if (w < 640) return 1;
-  if (w < 900) return 2;
-  return 3;
+  return w < 900 ? 3 : 5;
 }
 
 // CSS `column-count` can silently collapse to fewer columns when there's

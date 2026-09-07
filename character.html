@@ -12,10 +12,15 @@
 <div class="page">
   <div class="sticky-header">
     <div class="top-bar">
-      <a href="index.html" class="back-link">&larr; 캐릭터 목록</a>
+      <div class="top-bar-left">
+        <a href="index.html" class="back-link">&larr; 캐릭터 목록</a>
+        <a href="index.html" class="site-title">Closers Showcase</a>
+      </div>
       <div id="auth-bar"></div>
     </div>
   </div>
+
+  <a href="index.html" class="sidebar-brand">Closers<br><span class="accent-part">Showcase</span></a>
 
   <div class="char-title">
     <img id="char-icon" alt="" />
@@ -25,6 +30,11 @@
   <div class="section-head">
     <h2>코스튬 게시글</h2>
     <div class="section-actions">
+      <select id="slot-search-field" class="search-field-select">
+        <option value="title">제목명</option>
+        <option value="author">게시자명</option>
+        <option value="costume">코스튬명</option>
+      </select>
       <input type="text" id="slot-search" class="search-input" placeholder="게시글 검색" />
     </div>
   </div>
