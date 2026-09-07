@@ -149,7 +149,13 @@ function getMasonryColumns() {
 
 // CSS `column-count` can silently collapse to fewer columns when there's
 // little/uneven content (column-fill: balance). Building N real column
-// elements and round-robin-appending into them guarantees the column count.
+// elements and appending into them guarantees the column count.
+//
+// Cards go into whichever column is currently shortest, not round-robin by
+// index - card heights vary a lot (different image ratios, multi- vs
+// single-image posts), so blindly alternating columns could stack several
+// short cards in one column while another gets the tall ones, leaving a
+// big gap under the short column once the feed runs out of cards.
 function renderMasonryGrid(container, count) {
   container.innerHTML = '';
   const cols = [];
@@ -159,11 +165,13 @@ function renderMasonryGrid(container, count) {
     container.appendChild(col);
     cols.push(col);
   }
-  let i = 0;
   return {
     add(el) {
-      cols[i % count].appendChild(el);
-      i++;
+      let shortest = cols[0];
+      for (let i = 1; i < cols.length; i++) {
+        if (cols[i].offsetHeight < shortest.offsetHeight) shortest = cols[i];
+      }
+      shortest.appendChild(el);
     },
   };
 }
