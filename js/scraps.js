@@ -14,16 +14,12 @@ async function render() {
     return;
   }
 
-  const masonry = renderMasonryGrid(scrapGrid, getMasonryColumns());
-  slots.forEach((slot) => {
-    const card = buildSlotCard(slot, {
-      showCharacterTag: true,
-      onDelete: async (s) => {
-        await DB.deleteSlot(s.id);
-        render();
-      },
-    });
-    masonry.add(card);
+  await renderSlotMasonry(scrapGrid, slots, getMasonryColumns(), {
+    showCharacterTag: true,
+    onDelete: async (s) => {
+      await DB.deleteSlot(s.id);
+      render();
+    },
   });
 }
 

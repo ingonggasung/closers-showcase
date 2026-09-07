@@ -194,7 +194,7 @@ async function renderFeed() {
   applyFeedFilter();
 }
 
-function applyFeedFilter() {
+async function applyFeedFilter() {
   const q = feedSearchInput.value;
   const field = feedSearchField.value;
 
@@ -209,16 +209,12 @@ function applyFeedFilter() {
     return;
   }
 
-  const masonry = renderMasonryGrid(feedGrid, getMasonryColumns());
-  filtered.forEach((slot) => {
-    const card = buildSlotCard(slot, {
-      showCharacterTag: true,
-      onDelete: async (s) => {
-        await DB.deleteSlot(s.id);
-        renderFeed();
-      },
-    });
-    masonry.add(card);
+  await renderSlotMasonry(feedGrid, filtered, getMasonryColumns(), {
+    showCharacterTag: true,
+    onDelete: async (s) => {
+      await DB.deleteSlot(s.id);
+      renderFeed();
+    },
   });
 }
 

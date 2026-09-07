@@ -35,27 +35,22 @@ async function renderHeader() {
 async function render() {
   await renderHeader();
   allSlots = await DB.getSlotsByCharacter(characterId);
-  applySlotFilter();
+  await applySlotFilter();
 }
 
-function applySlotFilter() {
+async function applySlotFilter() {
   const q = slotSearchInput.value;
   const field = slotSearchField.value;
   const canPost = !!currentUser;
 
   const filtered = allSlots.filter((slot) => slotMatchesQuery(slot, q, field));
 
-  const masonry = renderMasonryGrid(slotGrid, getMasonryColumns());
-
-  filtered.forEach((slot) => {
-    const card = buildSlotCard(slot, {
-      draggable: true,
-      onDelete: async (s) => {
-        await DB.deleteSlot(s.id);
-        render();
-      },
-    });
-    masonry.add(card);
+  const masonry = await renderSlotMasonry(slotGrid, filtered, getMasonryColumns(), {
+    draggable: true,
+    onDelete: async (s) => {
+      await DB.deleteSlot(s.id);
+      render();
+    },
   });
 
   if (canPost) {
@@ -63,7 +58,7 @@ function applySlotFilter() {
     addCard.className = 'slot-card add-slot';
     addCard.innerHTML = `<span class="plus">+</span><span>코스튬 등록</span>`;
     addCard.addEventListener('click', () => openPostModal(characterId));
-    masonry.add(addCard);
+    masonry.addExtra(addCard);
   }
 }
 
