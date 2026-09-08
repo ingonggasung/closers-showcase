@@ -695,12 +695,12 @@ select:hover { border-color: var(--accent); }
 .landing-art.left {
   left: -250px;
   bottom: -260px;
-  animation: landing-in-left .9s cubic-bezier(0.2, 0.7, 0.3, 1) .3s both;
+  animation: landing-in-left .9s cubic-bezier(0.2, 0.7, 0.3, 1) 3.8s both;
 }
 .landing-art.right {
   right: -300px;
   bottom: -330px;
-  animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) 3.5s both;
 }
 @keyframes landing-in-left {
   from { opacity: 0; transform: translateX(-140px); }
