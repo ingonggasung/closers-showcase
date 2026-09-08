@@ -725,7 +725,7 @@ select:hover { border-color: var(--accent); }
     object-fit: cover;
     object-position: top center;
     bottom: calc(4vh - 50px);
-    right: calc(-20vw - 40px);
+    right: calc(-32vw - 40px);
   }
 }
 
