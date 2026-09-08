@@ -708,29 +708,31 @@ select:hover { border-color: var(--accent); }
    Everything here is in vw/vh so the layout tracks the window as it resizes;
    widen past square and the base landscape rules take back over. */
 @media (max-width: 720px), (max-aspect-ratio: 1/1) {
-  /* Every size and offset here is in vw, so both figures grow at exactly the
-     same rate and keep their relative placement as the window widens. Mixing
-     in vh made the left one stall once its height became the binding side. */
+  /* One shared unit drives every size and offset, so both figures scale at
+     exactly the same rate and keep their relative placement. It follows the
+     width on phone-shaped windows and switches to the height once the window
+     is wider than 3:5, which stops them ballooning as the ratio nears square. */
   .landing-art {
+    --u: min(1vw, 0.6vh);
     max-width: none;
   }
   .landing-art.left {
-    width: 102vw;
+    width: calc(102 * var(--u));
     height: auto;
-    top: -11vw;
+    top: calc(-11 * var(--u));
     bottom: auto;
-    left: -30vw;
+    left: calc(-30 * var(--u));
     object-position: top;
   }
   .landing-art.right {
     /* cover + top crops the legs off so only the upper body sits in the
        corner; height is the crop window. */
-    width: 135vw;
-    height: 110vw;
+    width: calc(135 * var(--u));
+    height: calc(110 * var(--u));
     object-fit: cover;
     object-position: top center;
-    bottom: -4.2vw;
-    right: -48.3vw;
+    bottom: calc(-4.2 * var(--u));
+    right: calc(-48.3 * var(--u));
   }
 }
 
