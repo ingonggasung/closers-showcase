@@ -736,7 +736,7 @@ select:hover { border-color: var(--accent); }
        19.8vw was the crop window's base, 74.5u is the height the crop hid. */
     width: calc(135 * var(--u));
     height: auto;
-    bottom: calc(19.8vw - 86.5 * var(--u));
+    bottom: calc(19.8vw - 74.5 * var(--u));
     /* Pushed out by a fixed share of her own width (48.3/135 of it), so the
        same amount of her stays on screen at every ratio. In vw she kept
        sliding out as she shrank. */
@@ -747,7 +747,9 @@ select:hover { border-color: var(--accent); }
 /* Phone-only nudge on top of the shared portrait layout. */
 @media (max-width: 720px) {
   .landing-art.right {
-    bottom: calc(19.8vw - 86.5 * var(--u) - 50vw);
+    /* In vh, not vw: how far down she sits has to follow the screen's height,
+       otherwise a short-and-wide phone window drops her off the bottom. */
+    bottom: -53.9vh;
   }
 }
 
