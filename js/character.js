@@ -2,7 +2,7 @@ const params = new URLSearchParams(location.search);
 const characterId = params.get('id');
 
 if (!characterId) {
-  location.href = 'index.html';
+  location.href = 'posts.html';
 }
 
 const slotGrid = document.getElementById('slot-grid');
@@ -22,7 +22,7 @@ document
 async function renderHeader() {
   character = await DB.getCharacter(characterId);
   if (!character) {
-    location.href = 'index.html';
+    location.href = 'posts.html';
     return;
   }
   document.getElementById('char-name').textContent = character.name;

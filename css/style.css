@@ -578,6 +578,43 @@ button {
   color: var(--accent);
 }
 
+/* ---------- Landing page (index.html) ---------- */
+.landing {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.landing-art {
+  position: absolute;
+  bottom: 0;
+  height: 88vh;
+  max-width: 44vw;
+  object-fit: contain;
+  object-position: bottom;
+  pointer-events: none;
+}
+.landing-art.left { left: 0; }
+.landing-art.right { right: 0; }
+.landing-center {
+  position: relative;
+  text-align: center;
+}
+.landing-title {
+  font-size: clamp(38px, 7vw, 92px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: .5px;
+  margin: 0 0 28px;
+}
+.landing-enter {
+  display: inline-block;
+  font-size: 15px;
+  padding: 12px 30px;
+}
+
 .empty-hint {
   color: var(--text-dim);
   font-size: 13px;
@@ -628,31 +665,6 @@ button {
      below) and never shares that horizontal band with the brand at all. */
   .page { padding-top: 75px; }
 
-  /* Decorative character art behind the main page only (:has(#filter-section)
-     = index.html), pinned to the viewport's bottom corners. */
-  body:has(#filter-section)::before,
-  body:has(#filter-section)::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    width: 30vw;
-    height: 80vh;
-    opacity: 1;
-    background-repeat: no-repeat;
-    background-size: contain;
-    pointer-events: none;
-    z-index: 1; /* temporarily above the cards/filter so the full art is visible */
-  }
-  body:has(#filter-section)::before {
-    left: 0;
-    background-image: url('../img/tris.png');
-    background-position: left bottom;
-  }
-  body:has(#filter-section)::after {
-    right: 0;
-    background-image: url('../img/yuria.png');
-    background-position: right bottom;
-  }
 
   /* .collapsed and the inline max-height come from the narrow-layout
      auto-collapse-on-scroll; both survive a resize past this breakpoint and

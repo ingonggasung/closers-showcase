@@ -3,111 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>클로저스 캐릭터 자랑</title>
+<title>Closers Showcase</title>
 <link rel="icon" id="favicon-link" href="" />
-<link rel="stylesheet" href="css/style.css?v=6" />
+<link rel="stylesheet" href="css/style.css?v=7" />
 </head>
 <body>
 
-<div class="page">
-  <div class="sticky-header">
-    <div class="top-bar">
-      <a href="index.html" class="site-title">Closers Showcase</a>
-      <div id="auth-bar"></div>
-    </div>
-
-    <button class="filter-toggle-bar" id="filter-toggle" aria-expanded="true">
-      <span>캐릭터</span>
-      <span class="chevron">▾</span>
-    </button>
-  </div>
-
-  <a href="index.html" class="sidebar-brand">Closers<br><span class="accent-part">Showcase</span></a>
-
-  <div id="filter-section">
-    <div class="char-grid" id="char-grid"><div class="empty-hint" style="grid-column:1/-1">불러오는 중...</div></div>
-  </div>
-
-  <div class="section-head">
-    <h2 id="feed-heading">전체 게시글</h2>
-    <div class="section-actions">
-      <select id="feed-search-field" class="search-field-select">
-        <option value="title">제목명</option>
-        <option value="author">게시자명</option>
-        <option value="costume">코스튬명</option>
-      </select>
-      <input type="text" id="feed-search" class="search-input" placeholder="게시글 검색" />
-    </div>
-  </div>
-
-  <div class="slot-grid" id="feed-grid"><div class="empty-hint">불러오는 중...</div></div>
-</div>
-
-<div class="modal-overlay" id="char-modal" hidden>
-  <div class="modal-box">
-    <h3>캐릭터 추가</h3>
-    <label>아이콘 이미지 (여러 장 선택 시 한 번에 여러 캐릭터 추가)</label>
-    <input type="file" id="char-icon-input" accept="image/*" multiple />
-    <div id="char-single-fields">
-      <label>캐릭터 이름</label>
-      <input type="text" id="char-name-input" placeholder="예: 서유리" />
-      <img class="icon-preview" id="char-icon-preview" />
-    </div>
-    <div id="char-bulk-list" class="char-bulk-list"></div>
-    <div class="modal-actions">
-      <button class="pill" id="char-cancel">취소</button>
-      <button class="pill accent" id="char-save">추가</button>
-    </div>
+<div class="landing">
+  <img class="landing-art left" src="img/tris.png?v=7" alt="" />
+  <img class="landing-art right" src="img/yuria.png?v=7" alt="" />
+  <div class="landing-center">
+    <h1 class="landing-title">Closers<br /><span class="accent-part">Showcase</span></h1>
+    <a class="pill accent landing-enter" href="posts.html">게시글 보러가기</a>
   </div>
 </div>
 
-<div class="modal-overlay" id="post-modal" hidden>
-  <div class="modal-box modal-box-wide">
-    <h3>코스튬 등록</h3>
-
-    <label>제목</label>
-    <input type="text" id="post-title" maxlength="60" placeholder="예: 여름 이벤트 코스튬" />
-
-    <label>캐릭터 선택</label>
-    <select id="post-character"></select>
-
-    <label>사진 (최대 10장)</label>
-    <input type="file" id="post-images" accept="image/*" multiple />
-    <div class="post-image-preview" id="post-image-preview"></div>
-
-    <label>코스튬</label>
-    <div id="post-costume-fields"></div>
-
-    <label>악세서리</label>
-    <div id="post-accessory-fields"></div>
-
-    <div class="field-label-row">
-      <label>메모 (염색 코드 등)</label>
-      <span id="post-notes-count">0/200</span>
-    </div>
-    <textarea id="post-notes" maxlength="200" rows="3"></textarea>
-
-    <div class="modal-actions">
-      <button class="pill" id="post-cancel">취소</button>
-      <button class="pill accent" id="post-submit">등록</button>
-    </div>
-  </div>
-</div>
-
-<button class="scroll-top-btn" id="scroll-top-btn" hidden title="맨 위로">&uarr;</button>
-<button class="fab" id="global-fab" hidden title="코스튬 등록">+</button>
-
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-init.js?v=6"></script>
-<script src="js/utils.js?v=6"></script>
-<script src="js/auth.js?v=6"></script>
-<script src="js/db.js?v=6"></script>
-<script src="js/dnd.js?v=6"></script>
-<script src="js/context-menu.js?v=6"></script>
-<script src="js/slot-card.js?v=6"></script>
-<script src="js/post-modal.js?v=6"></script>
-<script src="js/index.js?v=6"></script>
 </body>
 </html>

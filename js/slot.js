@@ -8,7 +8,7 @@ const characterId = params.get('cid');
 let editMode = params.get('edit') === '1';
 
 if (!slotId) {
-  location.href = 'index.html';
+  location.href = 'posts.html';
 }
 
 const imageRow = document.getElementById('image-row');
@@ -117,13 +117,13 @@ attachContextMenu(imageRow, () => currentSlot, async (slot) => {
   await DB.deleteSlot(slot.id);
   location.href = slot.characterId
     ? `character.html?id=${encodeURIComponent(slot.characterId)}`
-    : 'index.html';
+    : 'posts.html';
 });
 
 async function render() {
   currentSlot = await DB.getSlot(slotId);
   if (!currentSlot) {
-    location.href = 'index.html';
+    location.href = 'posts.html';
     return;
   }
   renderContent();
