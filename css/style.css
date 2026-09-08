@@ -702,10 +702,12 @@ select:hover { border-color: var(--accent); }
   bottom: -330px;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) 1s both;
 }
-/* Phones: the desktop framing (both figures oversized along the bottom)
-   swallows the whole screen, so they move to opposite corners instead -
-   left up top, right down bottom - and shrink to leave the title room. */
-@media (max-width: 720px) {
+/* Portrait-ish viewports (phones, and a tall PC window): the desktop framing
+   - both figures oversized along the bottom - swallows the whole screen, so
+   they move to opposite corners instead, left up top and right down bottom.
+   Everything here is in vw/vh so the layout tracks the window as it resizes;
+   widen past square and the base landscape rules take back over. */
+@media (max-width: 720px), (max-aspect-ratio: 1/1) {
   .landing-art {
     height: 75vh;
     max-width: 102vw;
