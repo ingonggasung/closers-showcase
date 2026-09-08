@@ -596,7 +596,7 @@ button {
   object-position: bottom;
   pointer-events: none;
 }
-.landing-art.left { left: 0; }
+.landing-art.left { left: 0; bottom: 20px; }
 .landing-art.right { right: 0; }
 .landing-center {
   position: relative;
