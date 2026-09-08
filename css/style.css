@@ -648,6 +648,13 @@ button {
   padding: 12px 30px;
 }
 
+.review-progress {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.review-progress[hidden] { display: none; }
+
 /* ---------- Category tabs ---------- */
 .tab-bar {
   display: flex;

@@ -7,6 +7,7 @@ const feedGrid = document.getElementById('feed-grid');
 const feedSearchInput = document.getElementById('feed-search');
 const feedSearchField = document.getElementById('feed-search-field');
 const categoryTabs = document.getElementById('category-tabs');
+const reviewProgress = document.getElementById('review-progress');
 let selectedCategory = ''; // '' = 전체
 const feedHeading = document.getElementById('feed-heading');
 const filterToggle = document.getElementById('filter-toggle');
@@ -188,6 +189,8 @@ async function renderFeed() {
     updateFaviconBadge();
   }
 
+  updateReviewProgress();
+
   if (allSlots.length === 0) {
     feedGrid.innerHTML = '<div class="empty-hint">아직 등록된 게시글이 없어요.</div>';
     return;
@@ -231,6 +234,26 @@ function clearCharacterFilter(id) {
   if (tile) tile.classList.remove('selected');
   updateFeedHeading();
   applyFeedFilter();
+}
+
+// Posts needed before a classifier trained on the admin's rulings would
+// have enough labelled examples to be worth building.
+const TRAINING_TARGET = 50;
+
+// Admin-only: how far the labelled set has come. There is no model and no
+// training running yet - this counts the rulings that would feed one.
+function updateReviewProgress() {
+  if (!isAdmin()) {
+    reviewProgress.hidden = true;
+    return;
+  }
+  const real = allSlots.filter((s) => !String(s.id).startsWith('dummy-'));
+  const ruled = real.filter((s) => s.verifiedCapture === true || s.verifiedCapture === false);
+  const confirmed = real.filter((s) => s.verifiedCapture === true).length;
+  reviewProgress.hidden = false;
+  reviewProgress.textContent =
+    `학습 데이터 ${ruled.length}/${TRAINING_TARGET}건 · 미검토 ${real.length - ruled.length}건 · 캡처 확인 ${confirmed}건` +
+    (ruled.length >= TRAINING_TARGET ? ' · 분류기 학습 가능' : '');
 }
 
 function updateFeedHeading() {
