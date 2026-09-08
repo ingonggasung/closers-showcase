@@ -753,6 +753,14 @@ select:hover { border-color: var(--accent); }
   }
 }
 
+/* Tall PC windows only - the phone block above keeps its own tuning. */
+@media (min-width: 721px) and (max-aspect-ratio: 1/1) {
+  .landing-art.left {
+    width: calc(114.2 * var(--u));
+    left: -20vw;
+  }
+}
+
 @keyframes landing-in-left {
   from { opacity: 0; transform: translateX(-140px); }
   to { opacity: 1; transform: none; }
