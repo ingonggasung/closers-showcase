@@ -737,7 +737,7 @@ select:hover { border-color: var(--accent); }
     height: calc(110 * var(--u));
     object-fit: cover;
     object-position: top center;
-    bottom: -4.2vw;
+    bottom: 7.8vw;
     right: -48.3vw;
   }
 }
