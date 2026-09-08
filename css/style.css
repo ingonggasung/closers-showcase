@@ -707,8 +707,8 @@ select:hover { border-color: var(--accent); }
    left up top, right down bottom - and shrink to leave the title room. */
 @media (max-width: 720px) {
   .landing-art {
-    height: 44vh;
-    max-width: 60vw;
+    height: 75vh;
+    max-width: 102vw;
   }
   .landing-art.left {
     top: 2vh;
@@ -719,9 +719,9 @@ select:hover { border-color: var(--accent); }
   .landing-art.right {
     /* Same horizontal scale as before, but cover+top crops the legs off so
        only the upper body sits in the corner. Height = the crop window. */
-    width: 90vw;
-    max-width: 90vw;
-    height: 34vh;
+    width: 135vw;
+    max-width: none;
+    height: 51vh;
     object-fit: cover;
     object-position: top center;
     bottom: calc(4vh - 50px);
