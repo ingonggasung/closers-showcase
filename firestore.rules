@@ -13,9 +13,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'tnals1870@gmail.com';
     }
 
+    // Reads defensively: a users doc that exists but has never been
+    // blocked simply has no `blocked` key, and reading a missing key in
+    // rules raises, which would deny the whole write.
     function isBlocked() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.keys().hasAny(['blocked'])
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.blocked == true;
     }
 
@@ -37,9 +42,10 @@ service cloud.firestore {
         && !isBlocked()
         && request.resource.data.ownerId == request.auth.uid
         // A new post is never born already verified - only the admin's
-        // ruling (below) may set this. Read with a default so a client
-        // that predates the field still passes instead of erroring out.
-        && request.resource.data.get('verifiedCapture', null) == null;
+        // ruling (below) may set this. Absent is fine too, so a client
+        // predating the field still posts instead of erroring out.
+        && (!request.resource.data.keys().hasAny(['verifiedCapture'])
+            || request.resource.data.verifiedCapture == null);
 
       allow update: if isAdmin()
         || (isSignedIn()
