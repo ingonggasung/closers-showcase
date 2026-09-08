@@ -717,8 +717,13 @@ select:hover { border-color: var(--accent); }
     object-position: top;
   }
   .landing-art.right {
-    height: 66vh;
+    /* Same horizontal scale as before, but cover+top crops the legs off so
+       only the upper body sits in the corner. Height = the crop window. */
+    width: 90vw;
     max-width: 90vw;
+    height: 34vh;
+    object-fit: cover;
+    object-position: top center;
     bottom: calc(4vh - 50px);
     right: calc(-10vw - 40px);
   }
