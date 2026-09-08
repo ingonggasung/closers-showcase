@@ -637,7 +637,7 @@ button {
     bottom: 0;
     width: 30vw;
     height: 80vh;
-    opacity: .5;
+    opacity: 1;
     background-repeat: no-repeat;
     background-size: contain;
     pointer-events: none;
