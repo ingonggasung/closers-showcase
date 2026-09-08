@@ -48,6 +48,16 @@ function openContextMenu(x, y, items) {
   }, 0);
 }
 
+async function setVerdict(slot, verdict) {
+  try {
+    await DB.setCaptureVerdict(slot.id, verdict);
+    slot.verifiedCapture = verdict;
+    location.reload();
+  } catch (err) {
+    alert('처리에 실패했습니다: ' + err.message);
+  }
+}
+
 function slotShareUrl(slot) {
   const base = location.href.slice(0, location.href.lastIndexOf('/') + 1);
   return `${base}slot.html?id=${encodeURIComponent(slot.id)}&cid=${encodeURIComponent(slot.characterId)}`;
@@ -138,6 +148,24 @@ function attachContextMenu(el, slotOrGetter, onDelete) {
           }
         },
       });
+    }
+
+    // Admin-only capture ruling. Deliberately separate from any blocking
+    // action: verdicts here only label a post, never touch an account.
+    if (isAdmin()) {
+      const verdict = slot.verifiedCapture;
+      if (verdict !== true) {
+        items.push({
+          label: '게임 캡처 확인',
+          onClick: () => setVerdict(slot, true),
+        });
+      }
+      if (verdict !== false) {
+        items.push({
+          label: '게임 캡처 아님',
+          onClick: () => setVerdict(slot, false),
+        });
+      }
     }
 
     if (canDelete && onDelete) {

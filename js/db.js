@@ -12,6 +12,11 @@
 //               warningCount/blocked are only ever written by the admin, via
 //               warnUser/blockUser below
 
+// Post categories. 19+ is deliberately absent: hosting it would trigger the
+// 청소년보호법 age-verification duty, which needs a real 본인확인기관 contract
+// and a server - neither of which this static site can satisfy.
+const SLOT_CATEGORIES = ['일반', '수영복'];
+
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
 }
@@ -57,7 +62,7 @@ const DB = {
     await batch.commit();
   },
 
-  async addSlot({ characterId, title, images, parts, notes }) {
+  async addSlot({ characterId, title, images, parts, notes, category, claimedGameCapture }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const [existing, character] = await Promise.all([
       firestore.collection('slots').where('characterId', '==', characterId).get(),
@@ -72,10 +77,24 @@ const DB = {
       images: images || [],
       parts: parts || {},
       notes: (notes || '').slice(0, 200),
+      category: SLOT_CATEGORIES.includes(category) ? category : SLOT_CATEGORIES[0],
+      claimedGameCapture: !!claimedGameCapture,
+      verifiedCapture: null, // admin's own verdict; see setCaptureVerdict
       order: existing.size,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
     return ref.id;
+  },
+
+  // The admin's ruling on whether a post really is an in-game capture.
+  // Kept as a stored field rather than just acted on, so the accumulated
+  // rulings become the labelled set a classifier can be built from later.
+  async setCaptureVerdict(slotId, verdict) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('slots').doc(slotId).update({
+      verifiedCapture: verdict,
+      verifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
   },
 
   async getSlotsByCharacter(characterId) {

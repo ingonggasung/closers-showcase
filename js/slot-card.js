@@ -360,6 +360,22 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   label.textContent = displayTitle;
   card.appendChild(label);
 
+  // Capture status: everyone sees a confirmed in-game capture; only the
+  // admin sees the states that still need a ruling, since they're the only
+  // one who can rule on them.
+  const capture = document.createElement('div');
+  if (slot.verifiedCapture === true) {
+    capture.className = 'capture-badge verified';
+    capture.textContent = '게임 캡처 확인됨';
+  } else if (isAdmin() && slot.verifiedCapture === false) {
+    capture.className = 'capture-badge rejected';
+    capture.textContent = '게임 캡처 아님';
+  } else if (isAdmin()) {
+    capture.className = 'capture-badge pending';
+    capture.textContent = slot.claimedGameCapture ? '캡처 주장 · 미검토' : '미검토';
+  }
+  if (capture.className) card.appendChild(capture);
+
   const tag = document.createElement('div');
   tag.className = 'slot-owner-tag';
   tag.textContent = showCharacterTag

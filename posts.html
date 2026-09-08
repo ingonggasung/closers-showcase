@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>클로저스 캐릭터 자랑</title>
 <link rel="icon" id="favicon-link" href="" />
-<link rel="stylesheet" href="css/style.css?v=21" />
+<link rel="stylesheet" href="css/style.css?v=22" />
 </head>
 <body>
 
@@ -40,6 +40,12 @@
     </div>
   </div>
 
+  <div class="tab-bar" id="category-tabs">
+    <button class="tab active" data-category="">전체</button>
+    <button class="tab" data-category="일반">일반</button>
+    <button class="tab" data-category="수영복">수영복</button>
+  </div>
+
   <div class="slot-grid" id="feed-grid"><div class="empty-hint">불러오는 중...</div></div>
 </div>
 
@@ -71,6 +77,17 @@
     <label>캐릭터 선택</label>
     <select id="post-character"></select>
 
+    <label>분류</label>
+    <select id="post-category">
+      <option value="일반">일반</option>
+      <option value="수영복">수영복</option>
+    </select>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="post-game-capture" />
+      <span>게임 내에서 직접 찍은 이미지입니다</span>
+    </label>
+
     <label>사진 (최대 10장)</label>
     <input type="file" id="post-images" accept="image/*" multiple />
     <div class="post-image-preview" id="post-image-preview"></div>
@@ -100,14 +117,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-init.js?v=21"></script>
-<script src="js/utils.js?v=21"></script>
-<script src="js/auth.js?v=21"></script>
-<script src="js/db.js?v=21"></script>
-<script src="js/dnd.js?v=21"></script>
-<script src="js/context-menu.js?v=21"></script>
-<script src="js/slot-card.js?v=21"></script>
-<script src="js/post-modal.js?v=21"></script>
-<script src="js/index.js?v=21"></script>
+<script src="js/firebase-init.js?v=22"></script>
+<script src="js/utils.js?v=22"></script>
+<script src="js/auth.js?v=22"></script>
+<script src="js/db.js?v=22"></script>
+<script src="js/dnd.js?v=22"></script>
+<script src="js/context-menu.js?v=22"></script>
+<script src="js/slot-card.js?v=22"></script>
+<script src="js/post-modal.js?v=22"></script>
+<script src="js/index.js?v=22"></script>
 </body>
 </html>

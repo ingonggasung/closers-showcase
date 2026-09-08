@@ -6,6 +6,8 @@ const iconPreview = document.getElementById('char-icon-preview');
 const feedGrid = document.getElementById('feed-grid');
 const feedSearchInput = document.getElementById('feed-search');
 const feedSearchField = document.getElementById('feed-search-field');
+const categoryTabs = document.getElementById('category-tabs');
+let selectedCategory = ''; // '' = 전체
 const feedHeading = document.getElementById('feed-heading');
 const filterToggle = document.getElementById('filter-toggle');
 const filterSection = document.getElementById('filter-section');
@@ -201,7 +203,10 @@ function applyFeedFilter() {
   const filtered = allSlots.filter((slot) => {
     const matchesSearch = slotMatchesQuery(slot, q, field);
     const matchesChar = selectedCharacters.size === 0 || selectedCharacters.has(slot.characterId);
-    return matchesSearch && matchesChar;
+    // Posts predating categories have no field; they read as 일반.
+    const matchesCategory =
+      !selectedCategory || (slot.category || '일반') === selectedCategory;
+    return matchesSearch && matchesChar && matchesCategory;
   });
 
   if (filtered.length === 0) {
@@ -249,6 +254,13 @@ function updateFeedHeading() {
 
 feedSearchInput.addEventListener('input', applyFeedFilter);
 feedSearchField.addEventListener('change', applyFeedFilter);
+categoryTabs.addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  selectedCategory = tab.dataset.category;
+  categoryTabs.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === tab));
+  applyFeedFilter();
+});
 
 const charSingleFields = document.getElementById('char-single-fields');
 const charBulkList = document.getElementById('char-bulk-list');

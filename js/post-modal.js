@@ -6,6 +6,8 @@ const MAX_POST_IMAGES = 10;
 const postModal = document.getElementById('post-modal');
 const postTitleInput = document.getElementById('post-title');
 const postCharacterSelect = document.getElementById('post-character');
+const postCategorySelect = document.getElementById('post-category');
+const postGameCapture = document.getElementById('post-game-capture');
 const postImagesInput = document.getElementById('post-images');
 const postImagePreview = document.getElementById('post-image-preview');
 const postCostumeContainer = document.getElementById('post-costume-fields');
@@ -67,6 +69,8 @@ function resetPostForm() {
   rebuildPostFields();
   postNotes.value = '';
   postNotesCount.textContent = '0/200';
+  postCategorySelect.value = '일반';
+  postGameCapture.checked = false;
 }
 
 async function openPostModal(prefillCharacterId) {
@@ -144,7 +148,15 @@ postSubmitBtn.addEventListener('click', async () => {
     const notes = postNotes.value.trim().slice(0, 200);
 
     const title = postTitleInput.value.trim();
-    const newId = await DB.addSlot({ characterId, title, images, parts, notes });
+    const newId = await DB.addSlot({
+      characterId,
+      title,
+      images,
+      parts,
+      notes,
+      category: postCategorySelect.value,
+      claimedGameCapture: postGameCapture.checked,
+    });
     closePostModal();
     location.href = `slot.html?id=${encodeURIComponent(newId)}&cid=${encodeURIComponent(characterId)}`;
   } catch (err) {
