@@ -731,13 +731,12 @@ select:hover { border-color: var(--accent); }
     object-position: top;
   }
   .landing-art.right {
-    /* cover + top crops the legs off so only the upper body sits in the
-       corner; height is the crop window. */
+    /* Full figure - the legs run off the bottom edge instead of being cut.
+       The bottom offset keeps her head where the old cropped box put it:
+       19.8vw was the crop window's base, 74.5u is the height the crop hid. */
     width: calc(135 * var(--u));
-    height: calc(110 * var(--u));
-    object-fit: cover;
-    object-position: top center;
-    bottom: 19.8vw;
+    height: auto;
+    bottom: calc(19.8vw - 74.5 * var(--u));
     right: -48.3vw;
   }
 }
