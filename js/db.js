@@ -217,6 +217,21 @@ const DB = {
     return doc.exists ? doc.data() : null;
   },
 
+  // Marks that this account has signed in. Only writes updatedAt, so it
+  // stays inside what the Firestore rules let a user write about themselves.
+  async touchUser() {
+    if (!currentUser) return;
+    await firestore
+      .collection('users')
+      .doc(currentUser.uid)
+      .set({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  },
+
+  async countUsers() {
+    const snap = await firestore.collection('users').get();
+    return snap.size;
+  },
+
   async setUserPhoto(photoURL) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore

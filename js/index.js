@@ -254,6 +254,12 @@ function updateReviewProgress() {
   reviewProgress.textContent =
     `학습 데이터 ${ruled.length}/${TRAINING_TARGET}건 · 미검토 ${real.length - ruled.length}건 · 캡처 확인 ${confirmed}건` +
     (ruled.length >= TRAINING_TARGET ? ' · 분류기 학습 가능' : '');
+
+  DB.countUsers()
+    .then((n) => {
+      reviewProgress.textContent += ` · 가입 이용자 ${n}명`;
+    })
+    .catch(() => {});
 }
 
 function updateFeedHeading() {

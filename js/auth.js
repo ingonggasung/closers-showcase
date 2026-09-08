@@ -34,6 +34,10 @@ async function refreshUserProfile(uid) {
   currentUserProfile = uid ? await DB.getUserProfile(uid).catch(() => null) : null;
   profileResolved = true;
   profileChangeListeners.forEach((fn) => fn());
+  // Leaves a users doc for anyone who signs in, so the site can count
+  // sign-ins itself - the Auth user list is server-only and can't be read
+  // from the browser.
+  if (uid) DB.touchUser().catch(() => {});
 }
 
 const authReady = new Promise((resolve) => {
