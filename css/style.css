@@ -603,7 +603,7 @@ button {
 }
 .landing-art.right {
   right: -300px;
-  bottom: -300px;
+  bottom: -350px;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 @keyframes landing-in-left {
@@ -619,13 +619,22 @@ button {
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing-art, .landing-center { animation: none; }
+  .landing-art, .landing-word-1, .landing-word-2, .landing-enter { animation: none; }
 }
 .landing-center {
   position: relative;
   text-align: center;
-  animation: landing-in-down .8s cubic-bezier(0.2, 0.7, 0.3, 1) .15s both;
 }
+/* Staggered so the two title words and the button each land in turn. */
+.landing-word-1,
+.landing-word-2,
+.landing-enter {
+  display: inline-block;
+  animation: landing-in-down .7s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.landing-word-1 { animation-delay: .1s; }
+.landing-word-2 { animation-delay: .35s; }
+.landing-enter { animation-delay: .6s; }
 .landing-title {
   font-size: clamp(38px, 7vw, 92px);
   font-weight: 900;
