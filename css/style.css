@@ -711,7 +711,7 @@ select:hover { border-color: var(--accent); }
     max-width: 102vw;
   }
   .landing-art.left {
-    top: calc(2vh - 40px);
+    top: calc(2vh - 40px - 20vw);
     bottom: auto;
     left: -20vw;
     object-position: top;
@@ -725,7 +725,7 @@ select:hover { border-color: var(--accent); }
     object-fit: cover;
     object-position: top center;
     bottom: calc(4vh - 50px);
-    right: calc(-32vw - 40px);
+    right: calc(-38vw - 40px);
   }
 }
 
