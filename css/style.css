@@ -659,8 +659,6 @@ button {
   color: var(--text-dim);
 }
 .landing-footer p { margin: 0; }
-.landing-footer a { text-decoration: underline; }
-.landing-footer a:hover { color: var(--accent); }
 .landing-copyright {
   margin-top: 6px !important;
   font-size: 11px;
