@@ -1214,10 +1214,15 @@ button {
 .file-btn {
   display: inline-block;
   margin-top: 4px;
-  padding: 12px 28px;
+  padding: 14px 7px;
   font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  background: var(--accent);
+  color: #fff;
   cursor: pointer; /* a label doesn't get the button cursor on its own */
 }
+.file-btn:hover { background: #ff5b93; color: #fff; }
 .icon-preview {
   width: 64px;
   height: 64px;
