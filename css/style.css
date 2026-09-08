@@ -717,8 +717,10 @@ select:hover { border-color: var(--accent); }
     object-position: top;
   }
   .landing-art.right {
-    bottom: 4vh;
-    right: -10vw;
+    height: 66vh;
+    max-width: 90vw;
+    bottom: calc(4vh - 50px);
+    right: calc(-10vw - 40px);
   }
 }
 
