@@ -641,7 +641,7 @@ button {
     background-repeat: no-repeat;
     background-size: contain;
     pointer-events: none;
-    z-index: -1;
+    z-index: 1; /* temporarily above the cards/filter so the full art is visible */
   }
   body:has(#filter-section)::before {
     left: 0;
