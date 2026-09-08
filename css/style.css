@@ -647,6 +647,25 @@ button {
   font-size: 15px;
   padding: 12px 30px;
 }
+.landing-footer {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 620px);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+.landing-footer p { margin: 0; }
+.landing-footer a { text-decoration: underline; }
+.landing-footer a:hover { color: var(--accent); }
+.landing-copyright {
+  margin-top: 6px !important;
+  font-size: 11px;
+  opacity: .75;
+}
 
 .review-progress {
   font-size: 12px;
