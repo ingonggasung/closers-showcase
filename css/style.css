@@ -194,6 +194,64 @@ button {
 .search-input::placeholder { color: var(--text-dim); }
 .search-input:focus { outline: none; border-color: var(--accent); }
 
+/* ---------- Selects ----------
+   Two layers: the closed control is restyled everywhere (native chrome
+   dropped for our own chevron), and where the browser supports the
+   customizable select, the open list gets the same treatment. Browsers
+   without it keep their native list, which still works fine. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%239a9ba3' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px !important;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+select:hover { border-color: var(--accent); }
+
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+  select {
+    background-image: none;
+    padding-right: 14px !important;
+  }
+  select::picker-icon {
+    color: var(--text-dim);
+    transition: transform .2s ease;
+  }
+  select:open::picker-icon { transform: rotate(180deg); }
+
+  ::picker(select) {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    margin-top: 6px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .55);
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  option {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    background: transparent;
+    transition: background .12s, color .12s;
+  }
+  option:hover,
+  option:focus { background: var(--panel-2); outline: none; }
+  option:checked { color: var(--accent); font-weight: 700; }
+  option::checkmark { display: none; }
+}
+
 /* ---------- Auth bar ---------- */
 #auth-bar { display: flex; align-items: center; }
 .auth-user {
