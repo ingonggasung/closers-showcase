@@ -702,6 +702,26 @@ select:hover { border-color: var(--accent); }
   bottom: -330px;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) 1s both;
 }
+/* Phones: the desktop framing (both figures oversized along the bottom)
+   swallows the whole screen, so they move to opposite corners instead -
+   left up top, right down bottom - and shrink to leave the title room. */
+@media (max-width: 720px) {
+  .landing-art {
+    height: 44vh;
+    max-width: 60vw;
+  }
+  .landing-art.left {
+    top: 2vh;
+    bottom: auto;
+    left: -10vw;
+    object-position: top;
+  }
+  .landing-art.right {
+    bottom: 4vh;
+    right: -10vw;
+  }
+}
+
 @keyframes landing-in-left {
   from { opacity: 0; transform: translateX(-140px); }
   to { opacity: 1; transform: none; }
