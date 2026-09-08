@@ -708,26 +708,29 @@ select:hover { border-color: var(--accent); }
    Everything here is in vw/vh so the layout tracks the window as it resizes;
    widen past square and the base landscape rules take back over. */
 @media (max-width: 720px), (max-aspect-ratio: 1/1) {
+  /* Every size and offset here is in vw, so both figures grow at exactly the
+     same rate and keep their relative placement as the window widens. Mixing
+     in vh made the left one stall once its height became the binding side. */
   .landing-art {
-    height: 75vh;
-    max-width: 102vw;
+    max-width: none;
   }
   .landing-art.left {
-    top: calc(2vh - 40px - 5vw);
+    width: 102vw;
+    height: auto;
+    top: -11vw;
     bottom: auto;
     left: -30vw;
     object-position: top;
   }
   .landing-art.right {
-    /* Same horizontal scale as before, but cover+top crops the legs off so
-       only the upper body sits in the corner. Height = the crop window. */
+    /* cover + top crops the legs off so only the upper body sits in the
+       corner; height is the crop window. */
     width: 135vw;
-    max-width: none;
-    height: 51vh;
+    height: 110vw;
     object-fit: cover;
     object-position: top center;
-    bottom: calc(4vh - 50px);
-    right: calc(-38vw - 40px);
+    bottom: -4.2vw;
+    right: -48.3vw;
   }
 }
 
