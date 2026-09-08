@@ -676,7 +676,7 @@ select:hover { border-color: var(--accent); }
   background:
     linear-gradient(rgba(20, 21, 25, .8), rgba(20, 21, 25, .8)),
     url('../img/landing-bg.webp') center / cover no-repeat;
-  animation: landing-bg-ripple 1.5s cubic-bezier(0.22, 0.7, 0.25, 1) both;
+  animation: landing-bg-ripple 2s cubic-bezier(0.22, 0.7, 0.25, 1) both;
 }
 @keyframes landing-bg-ripple {
   from { clip-path: circle(0% at 50% 50%); opacity: 0; }
