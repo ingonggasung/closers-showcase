@@ -590,8 +590,8 @@ button {
 .landing-art {
   position: absolute;
   bottom: 0;
-  height: 88vh;
-  max-width: 44vw;
+  height: 132vh;
+  max-width: 66vw;
   object-fit: contain;
   object-position: bottom;
   pointer-events: none;
