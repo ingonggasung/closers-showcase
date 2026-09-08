@@ -692,14 +692,17 @@ select:hover { border-color: var(--accent); }
   object-position: bottom;
   pointer-events: none;
 }
+/* Offsets are in vw (calibrated at 1920px wide, where -13vw == the old
+   -250px) so a narrow landscape window pushes the figures off-screen by the
+   same proportion instead of the same pixels. */
 .landing-art.left {
-  left: -250px;
-  bottom: -260px;
+  left: -13vw;
+  bottom: -13.5vw;
   animation: landing-in-left .9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.3s both;
 }
 .landing-art.right {
-  right: -300px;
-  bottom: -330px;
+  right: -15.6vw;
+  bottom: -17.2vw;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) 1s both;
 }
 /* Portrait-ish viewports (phones, and a tall PC window): the desktop framing
