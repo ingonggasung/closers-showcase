@@ -716,15 +716,18 @@ select:hover { border-color: var(--accent); }
      width on phone-shaped windows and switches to the height once the window
      is wider than 3:5, which stops them ballooning as the ratio nears square. */
   .landing-art {
+    /* Sizes use --u so the figures stop growing once the window nears square;
+       the offsets stay in vw so they keep hugging the screen edges instead of
+       drifting inward over the title. On phones --u == 1vw, so both agree. */
     --u: min(1vw, 0.6vh);
     max-width: none;
   }
   .landing-art.left {
     width: calc(102 * var(--u));
     height: auto;
-    top: calc(-11 * var(--u));
+    top: -11vw;
     bottom: auto;
-    left: calc(-30 * var(--u));
+    left: -30vw;
     object-position: top;
   }
   .landing-art.right {
@@ -734,8 +737,8 @@ select:hover { border-color: var(--accent); }
     height: calc(110 * var(--u));
     object-fit: cover;
     object-position: top center;
-    bottom: calc(-4.2 * var(--u));
-    right: calc(-48.3 * var(--u));
+    bottom: -4.2vw;
+    right: -48.3vw;
   }
 }
 
