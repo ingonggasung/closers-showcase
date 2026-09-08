@@ -596,11 +596,34 @@ button {
   object-position: bottom;
   pointer-events: none;
 }
-.landing-art.left { left: -80px; bottom: 50px; }
-.landing-art.right { right: -100px; }
+.landing-art.left {
+  left: -100px;
+  bottom: 50px;
+  animation: landing-in-left .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.landing-art.right {
+  right: -100px;
+  animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes landing-in-left {
+  from { opacity: 0; transform: translateX(-140px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-in-right {
+  from { opacity: 0; transform: translateX(140px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-in-down {
+  from { opacity: 0; transform: translateY(-60px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-art, .landing-center { animation: none; }
+}
 .landing-center {
   position: relative;
   text-align: center;
+  animation: landing-in-down .8s cubic-bezier(0.2, 0.7, 0.3, 1) .15s both;
 }
 .landing-title {
   font-size: clamp(38px, 7vw, 92px);
