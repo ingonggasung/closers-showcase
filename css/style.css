@@ -1211,18 +1211,21 @@ button {
      button opened the picker too. */
   display: none;
 }
-.file-btn {
+/* Scoped past `.modal-box label`, which is display:block and would
+   otherwise stretch this across the whole modal and override its type. */
+.modal-box label.file-btn {
   display: inline-block;
-  margin-top: 4px;
-  padding: 14px 7px;
+  width: auto;
+  margin: 6px 0 0;
+  padding: 14px 16px;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: .3px;
-  background: var(--accent);
-  color: #fff;
+  background: var(--panel-2);
+  color: var(--accent);
   cursor: pointer; /* a label doesn't get the button cursor on its own */
 }
-.file-btn:hover { background: #ff5b93; color: #fff; }
+.modal-box label.file-btn:hover { background: #2f3038; color: #ff5b93; }
 .icon-preview {
   width: 64px;
   height: 64px;
