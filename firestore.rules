@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Paste this whole file into Firebase Console -> Firestore Database -> 규칙.
+// It replaces the existing ruleset entirely.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'tnals1870@gmail.com';
+    }
+
+    function isBlocked() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.blocked == true;
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Base character roster - admin curates it, everyone can see it.
+    match /characters/{characterId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Costume posts.
+    match /slots/{slotId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && !isBlocked()
+        && request.resource.data.ownerId == request.auth.uid
+        // A new post is never born already verified - only the admin's
+        // ruling (below) may set this.
+        && request.resource.data.verifiedCapture == null;
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && !isBlocked()
+            && resource.data.ownerId == request.auth.uid
+            // Owners may edit their own post, but not its capture ruling
+            // or who owns it.
+            && !changedKeys().hasAny(['verifiedCapture', 'verifiedAt', 'ownerId']));
+
+      allow delete: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+    }
+
+    // Scraps - private to the user who made them. Doc id is `${uid}_${slotId}`.
+    match /scraps/{scrapId} {
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Reports - anyone signed in can file one; only the admin reads or clears them.
+    match /reports/{reportId} {
+      allow read, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // User profiles. Public to read (nicknames/avatars show on posts), but a
+    // user may only set their own display fields - warningCount and blocked
+    // are the admin's alone, which is what makes account blocking
+    // admin-only end to end.
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['photoURL', 'nickname', 'updatedAt']);
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && changedKeys().hasOnly(['photoURL', 'nickname', 'updatedAt']);
+    }
+  }
+}
