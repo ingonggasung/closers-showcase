@@ -744,6 +744,13 @@ select:hover { border-color: var(--accent); }
   }
 }
 
+/* Phone-only nudge on top of the shared portrait layout. */
+@media (max-width: 720px) {
+  .landing-art.right {
+    bottom: calc(19.8vw - 86.5 * var(--u) - 20vw);
+  }
+}
+
 @keyframes landing-in-left {
   from { opacity: 0; transform: translateX(-140px); }
   to { opacity: 1; transform: none; }
