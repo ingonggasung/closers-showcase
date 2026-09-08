@@ -597,13 +597,13 @@ button {
   pointer-events: none;
 }
 .landing-art.left {
-  left: -100px;
-  bottom: -150px;
+  left: -250px;
+  bottom: -250px;
   animation: landing-in-left .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 .landing-art.right {
-  right: -100px;
-  bottom: -200px;
+  right: -300px;
+  bottom: -300px;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 @keyframes landing-in-left {
