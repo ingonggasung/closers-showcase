@@ -711,7 +711,7 @@ select:hover { border-color: var(--accent); }
     max-width: 102vw;
   }
   .landing-art.left {
-    top: calc(2vh - 40px - 20vw);
+    top: calc(2vh - 40px - 10vw);
     bottom: auto;
     left: -20vw;
     object-position: top;
