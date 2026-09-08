@@ -664,6 +664,11 @@ select:hover { border-color: var(--accent); }
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  /* Scrim over the artwork - the lobby is bright through the middle,
+     exactly where the white title and the footer text sit. */
+  background:
+    linear-gradient(rgba(20, 21, 25, .74), rgba(20, 21, 25, .74)),
+    url('../img/landing-bg.webp') center / cover no-repeat;
 }
 .landing-art {
   position: absolute;
