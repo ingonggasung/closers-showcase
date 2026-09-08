@@ -737,7 +737,10 @@ select:hover { border-color: var(--accent); }
     width: calc(135 * var(--u));
     height: auto;
     bottom: calc(19.8vw - 74.5 * var(--u));
-    right: -48.3vw;
+    /* Pushed out by a fixed share of her own width (48.3/135 of it), so the
+       same amount of her stays on screen at every ratio. In vw she kept
+       sliding out as she shrank. */
+    right: calc(-48.3 * var(--u));
   }
 }
 
