@@ -628,13 +628,19 @@ button {
      below) and never shares that horizontal band with the brand at all. */
   .page { padding-top: 75px; }
 
-  #filter-section {
+  /* .collapsed and the inline max-height come from the narrow-layout
+     auto-collapse-on-scroll; both survive a resize past this breakpoint and
+     would leave the sidebar invisible until a reload, so beat them here. */
+  #filter-section,
+  #filter-section.collapsed {
     position: fixed;
     top: 150px;
     left: 24px;
     width: 365px;
-    max-height: calc(100vh - 178px);
+    max-height: calc(100vh - 178px) !important;
     overflow-y: auto;
+    opacity: 1;
+    pointer-events: auto;
   }
   /* Only index.html has something (the character filter) to fill the left
      gutter, so only it reserves horizontal space for it - other pages stay
