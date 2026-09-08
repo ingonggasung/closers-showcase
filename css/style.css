@@ -1222,10 +1222,10 @@ button {
   font-weight: 800;
   letter-spacing: .3px;
   background: var(--panel-2);
-  color: var(--accent);
+  color: #fff;
   cursor: pointer; /* a label doesn't get the button cursor on its own */
 }
-.modal-box label.file-btn:hover { background: #2f3038; color: #ff5b93; }
+.modal-box label.file-btn:hover { background: #2f3038; color: #fff; }
 .icon-preview {
   width: 64px;
   height: 64px;
