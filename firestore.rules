@@ -37,8 +37,9 @@ service cloud.firestore {
         && !isBlocked()
         && request.resource.data.ownerId == request.auth.uid
         // A new post is never born already verified - only the admin's
-        // ruling (below) may set this.
-        && request.resource.data.verifiedCapture == null;
+        // ruling (below) may set this. Read with a default so a client
+        // that predates the field still passes instead of erroring out.
+        && request.resource.data.get('verifiedCapture', null) == null;
 
       allow update: if isAdmin()
         || (isSignedIn()
