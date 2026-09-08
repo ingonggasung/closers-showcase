@@ -603,7 +603,7 @@ button {
 }
 .landing-art.right {
   right: -300px;
-  bottom: -340px;
+  bottom: -330px;
   animation: landing-in-right .9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 @keyframes landing-in-left {
