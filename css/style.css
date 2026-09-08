@@ -628,6 +628,32 @@ button {
      below) and never shares that horizontal band with the brand at all. */
   .page { padding-top: 75px; }
 
+  /* Decorative character art behind the main page only (:has(#filter-section)
+     = index.html), pinned to the viewport's bottom corners. */
+  body:has(#filter-section)::before,
+  body:has(#filter-section)::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    width: 30vw;
+    height: 80vh;
+    opacity: .5;
+    background-repeat: no-repeat;
+    background-size: contain;
+    pointer-events: none;
+    z-index: -1;
+  }
+  body:has(#filter-section)::before {
+    left: 0;
+    background-image: url('../img/tris.png');
+    background-position: left bottom;
+  }
+  body:has(#filter-section)::after {
+    right: 0;
+    background-image: url('../img/yuria.png');
+    background-position: right bottom;
+  }
+
   /* .collapsed and the inline max-height come from the narrow-layout
      auto-collapse-on-scroll; both survive a resize past this breakpoint and
      would leave the sidebar invisible until a reload, so beat them here. */
