@@ -1549,3 +1549,5 @@ select:hover { border-color: var(--accent); }
   .fab { right: 16px; bottom: 16px; }
   .scroll-top-btn { right: 16px; bottom: 76px; }
 }
+
+.tab[hidden] { display: none; }

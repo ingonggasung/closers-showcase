@@ -199,7 +199,33 @@ async function renderFeed() {
   applyFeedFilter();
 }
 
+// The 성인 category (stored as '수영복' on existing posts) stays admin-only
+// until there is a real adult-verification flow, which needs a paid
+// 본인확인기관 contract. Flip adultVisible() to open it up.
+const ADULT_CATEGORY = '수영복';
+function adultVisible() {
+  return isAdmin();
+}
+
+function updateAdultGate() {
+  const visible = adultVisible();
+  const tab = categoryTabs.querySelector(`.tab[data-category="${ADULT_CATEGORY}"]`);
+  if (tab) {
+    tab.hidden = !visible;
+    if (!visible && selectedCategory === ADULT_CATEGORY) {
+      selectedCategory = '';
+      categoryTabs
+        .querySelectorAll('.tab')
+        .forEach((t) => t.classList.toggle('active', !t.dataset.category));
+    }
+  }
+  // Nobody should be able to file a post into a category they cannot see.
+  const opt = document.querySelector(`#post-category option[value="${ADULT_CATEGORY}"]`);
+  if (opt) opt.hidden = !visible;
+}
+
 function applyFeedFilter() {
+  updateAdultGate();
   const q = feedSearchInput.value;
   const field = feedSearchField.value;
 
@@ -209,7 +235,8 @@ function applyFeedFilter() {
     // Posts predating categories have no field; they read as 일반.
     const matchesCategory =
       !selectedCategory || (slot.category || '일반') === selectedCategory;
-    return matchesSearch && matchesChar && matchesCategory;
+    const allowed = adultVisible() || (slot.category || '일반') !== ADULT_CATEGORY;
+    return matchesSearch && matchesChar && matchesCategory && allowed;
   });
 
   if (filtered.length === 0) {
