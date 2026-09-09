@@ -771,7 +771,7 @@ select:hover { border-color: var(--accent); }
   .landing-art.mirae {
     height: 138.6vh;
     max-width: 69.3vw;
-    bottom: -7.2vw;
+    bottom: -12.2vw;
   }
 }
 
