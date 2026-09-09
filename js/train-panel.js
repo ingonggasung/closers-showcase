@@ -58,7 +58,10 @@ function trainPanelMarkup() {
       <div class="train-test" id="test-result"></div>
       <div class="train-verdict" id="test-verdict"></div>
 
-      <h4 class="train-list-head">등록된 예시 <span id="train-count"></span></h4>
+      <h4 class="train-list-head">
+        등록된 예시 <span id="train-count"></span>
+        <button class="pill" id="train-migrate">예전 데이터 정리</button>
+      </h4>
       <div class="train-list" id="train-list">불러오는 중...</div>
     </div>
   `;
@@ -89,8 +92,24 @@ async function renderTrainList() {
             : '<span class="train-item-icon">🔗</span>'
         }
         <div class="train-item-body">
-          <span class="train-tag ${s.label === '성인' ? 'adult' : ''}">${escapeHtml(s.label)}</span>
-          ${s.capture === '외부' ? '<span class="train-tag adult">외부</span>' : ''}
+          <div class="train-item-controls">
+            <select class="row-label" data-id="${s.id}">
+              ${['미지정', '일반', '수영복', '성인']
+                .map(
+                  (v) =>
+                    `<option value="${v}"${v === (s.label || '미지정') ? ' selected' : ''}>${v}</option>`
+                )
+                .join('')}
+            </select>
+            <select class="row-capture" data-id="${s.id}">
+              ${['인게임', '외부']
+                .map(
+                  (v) =>
+                    `<option value="${v}"${v === (s.capture || '인게임') ? ' selected' : ''}>${v}</option>`
+                )
+                .join('')}
+            </select>
+          </div>
           <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a>
           ${s.note ? `<p class="train-note">${escapeHtml(s.note)}</p>` : ''}
         </div>
@@ -99,11 +118,24 @@ async function renderTrainList() {
     )
     .join('');
 
+  list.querySelectorAll('.row-label, .row-capture').forEach((sel) => {
+    sel.addEventListener('change', async () => {
+      const field = sel.classList.contains('row-label') ? 'label' : 'capture';
+      try {
+        await DB.updateTrainingSample(sel.dataset.id, { [field]: sel.value });
+        invalidateModels();
+      } catch (err) {
+        alert('수정에 실패했습니다: ' + err.message);
+      }
+    });
+  });
+
   list.querySelectorAll('.train-del').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = btn.closest('.train-item').dataset.id;
       if (!confirm('이 예시를 삭제할까요?')) return;
       await DB.deleteTrainingSample(id);
+      invalidateModels();
       renderTrainList();
     });
   });
@@ -115,12 +147,20 @@ async function renderTrainList() {
 // model is a stock pretrained one loaded from a CDN, and the "learning" is
 // just the example set sitting next to the query in feature space.
 
-const CATEGORY_LABELS = ['일반', '수영복', '성인'];
+const CATEGORY_LABELS = ['일반', '수영복', '성인']; // '미지정' is deliberately out
 const CAPTURE_LABELS = ['인게임', '외부'];
 
 let mobilenetModel = null;
+let captureIndex = null; // { refs: [{id, vec}], outs: [...], threshold, count }
 // One classifier per question, keyed by the label set it answers.
-const knnCache = {};
+let knnCache = {};
+
+// Editing a sample does not change how many there are, so the count-based
+// cache check cannot see it. Anything that mutates the set calls this.
+function invalidateModels() {
+  knnCache = {};
+  captureIndex = null;
+}
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -192,8 +232,6 @@ async function ensureKnn(labels, status = () => {}) {
 // labelled 외부, so this is a one-class problem: something is "외부" when it
 // does not look like anything in the reference set. No counter-examples are
 // needed - a picture far enough from every screenshot we know is the answer.
-
-let captureIndex = null; // { refs: [{id, vec}], outs: [...], threshold, count }
 
 function unit(arr) {
   let n = 0;
@@ -509,6 +547,7 @@ function buildTrainPanel() {
         alert('이미 등록된 이미지라 건너뛰었습니다:\n' + skipped.join('\n'));
       }
       noteInput.value = '';
+      invalidateModels();
       await renderTrainList();
     } catch (err) {
       fileName.textContent = '';
@@ -519,6 +558,25 @@ function buildTrainPanel() {
   }
 
   onDrop(overlay.querySelector('#train-drop'), addSamples);
+
+  overlay.querySelector('#train-migrate').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const fixed = await DB.migrateTrainingSamples();
+      invalidateModels();
+      await renderTrainList();
+      alert(
+        fixed
+          ? `${fixed}건을 정리했습니다. 탭이 '미지정'인 항목은 목록에서 직접 지정해주세요.`
+          : '정리할 항목이 없습니다.'
+      );
+    } catch (err) {
+      alert('정리에 실패했습니다: ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   const testInput = overlay.querySelector('#test-file');
   testInput.addEventListener('change', () => {

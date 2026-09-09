@@ -1596,3 +1596,10 @@ select:hover { border-color: var(--accent); }
 }
 .verdict-fix { margin-top: 10px; }
 .verdict-fix select { width: auto; min-width: 150px; margin: 0; }
+
+.train-list-head { display: flex; align-items: center; gap: 10px; }
+.train-list-head .pill { font-size: 12px; padding: 5px 10px; }
+.train-item-controls { display: flex; gap: 6px; margin-bottom: 4px; }
+.train-item-controls select {
+  width: auto; min-width: 92px; margin: 0; padding: 4px 8px; font-size: 12px;
+}

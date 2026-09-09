@@ -70,6 +70,34 @@ const DB = {
     return snap.docs.map(docToObj);
   },
 
+  async updateTrainingSample(id, fields) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('trainingSamples').doc(id).update(fields);
+  },
+
+  // Older samples predate the label/capture split: they carried one label,
+  // and '외부' lived in it. Without this they would read as 인게임 - the exact
+  // opposite of what they were registered as.
+  async migrateTrainingSamples() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore.collection('trainingSamples').get();
+    const batch = firestore.batch();
+    let fixed = 0;
+    snap.docs.forEach((doc) => {
+      const d = doc.data();
+      if (d.capture) return;
+      batch.update(doc.ref, {
+        capture: d.label === '외부' ? '외부' : '인게임',
+        // The tab was never recorded for those, so it stays unset rather than
+        // being guessed - 미지정 samples are skipped by the tab classifier.
+        label: d.label === '외부' ? '미지정' : d.label,
+      });
+      fixed++;
+    });
+    if (fixed) await batch.commit();
+    return fixed;
+  },
+
   async deleteTrainingSample(id) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('trainingSamples').doc(id).delete();
