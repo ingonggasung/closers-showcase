@@ -182,7 +182,7 @@ const HANGUL = /[가-힣]/;
 // a translation the admin has since corrected, and no copy at all makes every
 // page load wait on the network.
 const AUTO_CACHE_KEY = 'closers-autotr';
-const AUTO_CACHE_TTL = 10 * 60 * 1000;
+const AUTO_CACHE_TTL = 2 * 60 * 1000;
 
 let autoCache = {};
 let autoPending = new Set();
@@ -195,6 +195,15 @@ function loadAutoCache() {
   try {
     const raw = JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || '{}');
     if (Date.now() - (raw.savedAt || 0) < AUTO_CACHE_TTL) autoCache = raw.entries || {};
+  } catch {}
+}
+
+// Called after the admin edits the dictionary: without this their own
+// browser would keep showing the old wording until the cache expired.
+function clearTranslationCache() {
+  autoCache = {};
+  try {
+    localStorage.removeItem(AUTO_CACHE_KEY);
   } catch {}
 }
 

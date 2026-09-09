@@ -50,6 +50,7 @@ function dictMarkup() {
 
       <div class="modal-actions">
         <button class="pill" id="dict-close">닫기</button>
+        <button class="pill accent" id="dict-reload">저장하고 새로고침</button>
       </div>
     </div>
   `;
@@ -89,6 +90,7 @@ function renderDictRows() {
         await DB.setTranslation(row.dataset.id, { text: value, locked: true });
         entry.text = value;
         entry.locked = true;
+        clearTranslationCache();
         input.classList.add('saved');
         setTimeout(() => input.classList.remove('saved'), 900);
       } catch (err) {
@@ -107,6 +109,7 @@ function renderDictRows() {
       if (!confirm('이 번역을 삭제할까요? 다음에 다시 기계번역됩니다.')) return;
       try {
         await DB.deleteTranslation(id);
+        clearTranslationCache();
         dictRows = dictRows.filter((r) => r.id !== id);
         renderDictRows();
       } catch (err) {
@@ -134,6 +137,12 @@ function buildDictPanel() {
   document.body.appendChild(overlay);
 
   overlay.querySelector('#dict-close').addEventListener('click', () => (overlay.hidden = true));
+  // A page already showing the old wording only picks up the fix on reload -
+  // the translated text is in the DOM, not re-fetched.
+  overlay.querySelector('#dict-reload').addEventListener('click', () => {
+    clearTranslationCache();
+    location.reload();
+  });
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.hidden = true;
   });
@@ -153,6 +162,7 @@ function buildDictPanel() {
     try {
       const id = await translationDocId(src, dictLang);
       await DB.setTranslation(id, { source: src, target: dictLang, text: out, locked: true });
+      clearTranslationCache();
       overlay.querySelector('#dict-new-src').value = '';
       overlay.querySelector('#dict-new-out').value = '';
       await loadDict();
