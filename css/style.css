@@ -781,6 +781,18 @@ select:hover { border-color: var(--accent); }
   }
 }
 
+/* Phone-shaped windows: the alternate pair sits differently from the default
+   one because their source images carry different margins. */
+@media (max-width: 720px) and (max-aspect-ratio: 3/5) {
+  .landing-art.eunha {
+    top: -4vw;
+  }
+  .landing-art.mirae {
+    bottom: calc(-53.9vh + 8vw);
+    right: calc(-48.3 * var(--u) - 6vw);
+  }
+}
+
 /* Per-artwork trim: the alternate figures have different margins in their
    source images, so they need their own scale in the landscape framing. */
 @media (min-width: 721px) and (min-aspect-ratio: 1/1) {
