@@ -86,6 +86,43 @@ const DB = {
       .set({ trialStartedAt: firebase.firestore.FieldValue.serverTimestamp() });
   },
 
+  async enableAutoDelete() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('config').doc('autoModeration').set(
+      {
+        autoDelete: true,
+        autoDeleteStartedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  },
+
+  async disableAutoDelete() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore
+      .collection('config')
+      .doc('autoModeration')
+      .set({ autoDelete: false }, { merge: true });
+  },
+
+  // Auto-deletion keeps a copy of what it removed. A classifier's mistake
+  // should cost a restore, not the post.
+  async autoDeleteSlot(slot, confidence) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('autoDeleted').add({
+      slotId: slot.id,
+      title: slot.title || '',
+      ownerId: slot.ownerId || '',
+      ownerName: slot.ownerName || '',
+      characterId: slot.characterId || '',
+      images: slot.images || [],
+      category: slot.category || '일반',
+      confidence,
+      deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    await firestore.collection('slots').doc(slot.id).delete();
+  },
+
   async addCharacter({ name, icon }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const existing = await firestore.collection('characters').get();

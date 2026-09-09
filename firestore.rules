@@ -81,6 +81,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Archive of auto-deleted posts, so a classifier mistake is recoverable.
+    match /autoDeleted/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Auto-moderation switch. Everyone reads it (their client needs to know
     // whether the trial is on); only the admin flips it.
     match /config/{docId} {

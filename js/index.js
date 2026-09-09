@@ -269,8 +269,14 @@ async function autoReviewPosts() {
     if (!verdict) return; // not enough examples yet - stop, don't spin
     const flagged = verdict.label === '외부' && verdict.confidence >= AUTO_FLAG_MIN_CONF;
     try {
-      await DB.setAutoFlag(slot.id, flagged, verdict.confidence);
-      Object.assign(slot, { autoChecked: true, autoFlag: flagged });
+      if (flagged && autoModeration.autoDelete) {
+        // Removed, but archived to autoDeleted first - see DB.autoDeleteSlot.
+        await DB.autoDeleteSlot(slot, verdict.confidence);
+        allSlots = allSlots.filter((s) => s.id !== slot.id);
+      } else {
+        await DB.setAutoFlag(slot.id, flagged, verdict.confidence);
+        Object.assign(slot, { autoChecked: true, autoFlag: flagged });
+      }
     } catch (err) {
       console.warn('자동 검토 저장 실패:', slot.id, err);
     }
@@ -345,6 +351,7 @@ function updateReviewProgress() {
     const left = Math.ceil((trialStartedMs() + TRIAL_DAYS * 86400000 - Date.now()) / 86400000);
     reviewProgress.textContent += ` · 자동 숨김 테스트 진행 중 (${left}일 남음)`;
   }
+  if (autoModeration.autoDelete) reviewProgress.textContent += ' · 자동 삭제 켜짐';
 
   DB.countUsers()
     .then((n) => {
@@ -352,36 +359,101 @@ function updateReviewProgress() {
     })
     .catch(() => {});
 
-  maybeOfferTrial();
+  updateAutoBanner();
 }
 
-// Notifies the admin once the labelled set is big enough, and only then.
-async function maybeOfferTrial() {
-  if (!isAdmin() || trialStartedMs() > 0) return;
+function trialEnded() {
+  return trialStartedMs() > 0 && !trialActive();
+}
+
+function autoBannerBox() {
+  let box = document.getElementById('auto-banner');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'auto-banner';
+    box.className = 'trial-offer';
+    reviewProgress.insertAdjacentElement('afterend', box);
+  }
+  return box;
+}
+
+async function refreshAuto() {
+  autoModeration = await DB.getAutoModeration();
+  updateReviewProgress();
+  applyFeedFilter();
+}
+
+// One banner, three states: propose the trial, report on the finished trial,
+// or say that auto-deletion is live.
+async function updateAutoBanner() {
+  const existing = document.getElementById('auto-banner');
+  if (!isAdmin()) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  if (autoModeration.autoDelete) {
+    const box = autoBannerBox();
+    box.innerHTML = `
+      <span>자동 삭제가 <b>켜져 있습니다</b>. 삭제된 게시글은 되살릴 수 있도록 보관됩니다.</span>
+      <button class="pill" id="auto-off">끄기</button>`;
+    document.getElementById('auto-off').addEventListener('click', async () => {
+      if (!confirm('자동 삭제를 끌까요?')) return;
+      await DB.disableAutoDelete();
+      refreshAuto();
+    });
+    return;
+  }
+
+  if (trialEnded()) {
+    // What the trial actually did: posts it hid, and how the admin ruled on them.
+    const hidden = allSlots.filter((s) => s.autoFlag);
+    const wrong = hidden.filter((s) => s.verifiedCapture === true).length;
+    const right = hidden.filter((s) => s.verifiedCapture === false).length;
+    const box = autoBannerBox();
+    box.innerHTML = `
+      <span>${TRIAL_DAYS}일 자동 숨김 테스트가 끝났습니다 —
+      숨긴 게시글 ${hidden.length}건 · 관리자 확인 결과 맞음 ${right}건 · 잘못 숨김 ${wrong}건.
+      결과가 만족스러우면 자동 <b>삭제</b>를 켜세요.</span>
+      <button class="pill accent" id="auto-enable">자동 삭제 켜기</button>
+      <button class="pill" id="auto-again">${TRIAL_DAYS}일 더 지켜보기</button>`;
+    document.getElementById('auto-enable').addEventListener('click', async () => {
+      if (!confirm('자동 삭제를 켤까요? 이후 외부 이미지로 판정된 게시글은 자동으로 삭제됩니다.')) return;
+      await DB.enableAutoDelete();
+      refreshAuto();
+    });
+    document.getElementById('auto-again').addEventListener('click', async () => {
+      await DB.startAutoModerationTrial();
+      refreshAuto();
+    });
+    return;
+  }
+
+  if (trialActive()) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  // Not started yet: offer the trial once there are enough examples.
   let counts;
   try {
     counts = await captureSampleCounts();
   } catch {
     return;
   }
-  if (Object.values(counts).some((n) => n < CAPTURE_TARGET)) return;
-  if (document.getElementById('trial-offer')) return;
-
-  const box = document.createElement('div');
-  box.id = 'trial-offer';
-  box.className = 'trial-offer';
+  if (Object.values(counts).some((n) => n < CAPTURE_TARGET)) {
+    if (existing) existing.remove();
+    return;
+  }
+  const box = autoBannerBox();
   box.innerHTML = `
     <span>학습 예시가 충분히 모였습니다 (인게임 ${counts['인게임']}장 · 외부 ${counts['외부']}장).
     ${TRIAL_DAYS}일간 자동으로 <b>숨기기</b> 테스트를 시작할까요? 삭제는 하지 않습니다.</span>
     <button class="pill accent" id="trial-start">테스트 시작</button>`;
-  reviewProgress.insertAdjacentElement('afterend', box);
   document.getElementById('trial-start').addEventListener('click', async () => {
     if (!confirm(`${TRIAL_DAYS}일간 자동 숨김 테스트를 시작할까요?`)) return;
     await DB.startAutoModerationTrial();
-    autoModeration = await DB.getAutoModeration();
-    box.remove();
-    updateReviewProgress();
-    applyFeedFilter();
+    refreshAuto();
   });
 }
 
