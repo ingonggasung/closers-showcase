@@ -760,10 +760,10 @@ select:hover { border-color: var(--accent); }
     left: -20vw;
   }
   .landing-art.eunha {
-    top: -4vw;
+    top: 1vw;
   }
   .landing-art.mirae {
-    bottom: calc(22.8vw - 74.5 * var(--u));
+    bottom: calc(25.8vw - 74.5 * var(--u));
   }
 }
 
