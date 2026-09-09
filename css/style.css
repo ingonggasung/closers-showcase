@@ -768,6 +768,19 @@ select:hover { border-color: var(--accent); }
   }
 }
 
+/* Narrow but not phone-shaped (a slim desktop window): the phone block's
+   tuning is calibrated for a ~9:19 handset, so the alternate art gets its own
+   placement once the window is squarer than 3:5. */
+@media (max-width: 720px) and (min-aspect-ratio: 3/5) {
+  .landing-art.eunha {
+    top: -6vw;
+  }
+  .landing-art.mirae {
+    bottom: calc(-53.9vh + 7vw);
+    right: calc(-48.3 * var(--u) - 2vw);
+  }
+}
+
 /* Per-artwork trim: the alternate figures have different margins in their
    source images, so they need their own scale in the landscape framing. */
 @media (min-width: 721px) and (min-aspect-ratio: 1/1) {
