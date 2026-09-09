@@ -392,8 +392,10 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   // Capture status: everyone sees a confirmed in-game capture; only the
   // admin sees the states that still need a ruling, since they're the only
   // one who can rule on them.
+  // 캡처 관련 딱지는 전부 관리자 전용입니다. 일반 이용자에게는 검수 상태를
+  // 드러내지 않습니다 - 운영 정보지 게시글 정보가 아니기 때문입니다.
   const capture = document.createElement('div');
-  if (slot.verifiedCapture === true) {
+  if (isAdmin() && slot.verifiedCapture === true) {
     capture.className = 'capture-badge verified';
     capture.textContent = '게임 캡처 확인됨';
   } else if (isAdmin() && slot.verifiedCapture === false) {
