@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Closers Showcase</title>
 <link rel="icon" id="favicon-link" href="" />
-<link rel="stylesheet" href="css/style.css?v=66" />
+<link rel="stylesheet" href="css/style.css?v=67" />
 </head>
 <body>
 
@@ -16,8 +16,11 @@
     // One of the two art pairs per visit. src is set here rather than in the
     // markup so only the chosen pair is ever downloaded.
     var pair = Math.random() < .5 ? ['tris', 'yuria'] : ['eunha', 'mirae'];
-    document.querySelector('.landing-art.left').src = 'img/' + pair[0] + '.webp?v=66';
-    document.querySelector('.landing-art.right').src = 'img/' + pair[1] + '.webp?v=66';
+    ['left', 'right'].forEach(function (side, i) {
+      var el = document.querySelector('.landing-art.' + side);
+      el.src = 'img/' + pair[i] + '.webp?v=67';
+      el.classList.add(pair[i]);  // per-artwork size tweaks live in the CSS
+    });
   </script>
   <div class="landing-center">
     <h1 class="landing-title">

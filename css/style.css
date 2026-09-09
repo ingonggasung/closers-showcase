@@ -761,6 +761,15 @@ select:hover { border-color: var(--accent); }
   }
 }
 
+/* Per-artwork trim: the alternate figures have different margins in their
+   source images, so they need their own scale in the landscape framing. */
+@media (min-width: 721px) and (min-aspect-ratio: 1/1) {
+  .landing-art.eunha {
+    height: 112.2vh;
+    max-width: 56.1vw;
+  }
+}
+
 @keyframes landing-in-left {
   from { opacity: 0; transform: translateX(-140px); }
   to { opacity: 1; transform: none; }
