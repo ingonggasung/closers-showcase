@@ -12,6 +12,10 @@ const crypto = require('crypto');
 
 const MAX_TEXTS = 128;
 const MAX_CHARS = 400; // per string; longer ones are left alone
+// The source language is Korean, so anything without Hangul is not something
+// this endpoint should translate - and caching such a string would pin
+// nonsense in the dictionary forever.
+const HANGUL = /[가-힣]/;
 
 function db() {
   if (!admin.apps.length) {
@@ -126,7 +130,7 @@ module.exports = async (req, res) => {
     const target = ['ja', 'zh'].includes(body.target) ? body.target : 'en';
     const texts = [...new Set((body.texts || []).filter((t) => typeof t === 'string'))]
       .map((t) => t.trim())
-      .filter((t) => t && t.length <= MAX_CHARS)
+      .filter((t) => t && t.length <= MAX_CHARS && HANGUL.test(t))
       .slice(0, MAX_TEXTS);
     if (!texts.length) return res.json({ translations: {} });
 
