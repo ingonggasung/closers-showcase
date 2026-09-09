@@ -297,8 +297,11 @@ function applyFeedFilter() {
     const matchesCategory =
       !selectedCategory || (slot.category || '일반') === selectedCategory;
     const allowed = adultVisible() || (slot.category || '일반') !== ADULT_CATEGORY;
-    // During the trial a flagged post is hidden from everyone but the admin.
-    const notHidden = isAdmin() || !(trialActive() && slot.autoFlag);
+    // A flagged post is hidden from everyone but the admin, both during the
+    // trial and once auto-deletion is on (deletion itself waits for the
+    // admin's sweep, but it should not stay visible in the meantime).
+    const gateOn = trialActive() || autoModeration.autoDelete;
+    const notHidden = isAdmin() || !(gateOn && slot.autoFlag);
     return matchesSearch && matchesChar && matchesCategory && allowed && notHidden;
   });
 

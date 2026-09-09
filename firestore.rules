@@ -54,10 +54,10 @@ service cloud.firestore {
             && resource.data.ownerId == request.auth.uid
             // Owners may edit their own post, but not its capture ruling
             // or who owns it.
-            && !changedKeys().hasAny([
-                 'verifiedCapture', 'verifiedAt', 'ownerId',
-                 'autoChecked', 'autoFlag', 'autoConfidence', 'autoCheckedAt'
-               ]));
+            // The owner's client writes its own auto-review verdict right
+            // after posting, so those fields are allowed here - but the
+            // admin's ruling fields never are.
+            && !changedKeys().hasAny(['verifiedCapture', 'verifiedAt', 'ownerId']));
 
       allow delete: if isAdmin()
         || (isSignedIn() && resource.data.ownerId == request.auth.uid);

@@ -103,6 +103,24 @@ const DB = {
     await firestore.collection('trainingSamples').doc(id).delete();
   },
 
+  // Same verdict, but written by the post's own author right after posting,
+  // so a new post is judged in seconds instead of waiting for the admin to
+  // visit. The author could in principle lie here - the rules only check
+  // ownership - but the admin's ruling always overrides, and the admin's
+  // sweep re-checks anything suspicious.
+  // ponytail: trust ceiling of running this client-side; move to a Vercel
+  // function if that ever matters.
+  async setAutoFlagSelf(slotId, flagged, confidence) {
+    if (!currentUser) return;
+    await firestore.collection('slots').doc(slotId).update({
+      autoChecked: true,
+      autoFlag: !!flagged,
+      autoConfidence: confidence,
+      autoBy: 'owner',
+      autoCheckedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  },
+
   // Auto-review verdict on one post. Written by the admin's browser only -
   // there is no server, so the classifier runs where the admin is.
   async setAutoFlag(slotId, flagged, confidence) {

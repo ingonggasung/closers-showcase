@@ -120,6 +120,24 @@ attachContextMenu(imageRow, () => currentSlot, async (slot) => {
     : 'posts.html';
 });
 
+// Runs right after a post is opened by its author - which, straight after
+// posting, is immediately. Fire and forget: the page never waits on it.
+async function autoReviewThisPost() {
+  const slot = currentSlot;
+  if (!slot || slot.autoChecked || slot.verifiedCapture != null) return;
+  if (!(isOwner(slot) || isAdmin())) return;
+  const url = (slot.images || [])[0];
+  if (!url) return;
+  try {
+    const verdict = await classifyCapture(url);
+    if (!verdict) return; // no reference set yet
+    const flagged = verdict.label === '외부' && verdict.confidence >= 0.7;
+    await DB.setAutoFlagSelf(slot.id, flagged, verdict.confidence);
+  } catch (err) {
+    console.warn('자동 검토 실패:', err);
+  }
+}
+
 async function render() {
   currentSlot = await DB.getSlot(slotId);
   if (!currentSlot) {
@@ -127,6 +145,7 @@ async function render() {
     return;
   }
   renderContent();
+  autoReviewThisPost();
 }
 
 function renderContent() {
