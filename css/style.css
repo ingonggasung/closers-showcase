@@ -1574,3 +1574,11 @@ select:hover { border-color: var(--accent); }
 .train-test { margin-top: 10px; }
 .train-test-out { display: flex; align-items: center; gap: 12px; }
 .train-test-out img { width: 92px; height: 92px; object-fit: cover; border-radius: 10px; }
+
+.drop-zone {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  padding: 12px; border: 1px dashed #4a505e; border-radius: 12px;
+  transition: border-color .15s, background .15s;
+}
+.drop-zone.over { border-color: var(--accent); background: rgba(255,255,255,.04); }
+.drop-hint { color: var(--muted); font-size: 13px; }

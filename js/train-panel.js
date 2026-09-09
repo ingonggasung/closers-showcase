@@ -14,9 +14,12 @@ function trainPanelMarkup() {
       </p>
 
       <label>이미지 파일</label>
-      <input type="file" id="train-file" accept="image/*" hidden />
-      <label class="pill file-btn" for="train-file">사진 선택</label>
-      <span class="train-file-name" id="train-file-name"></span>
+      <div class="drop-zone" id="train-drop">
+        <input type="file" id="train-file" accept="image/*" multiple hidden />
+        <label class="pill file-btn" for="train-file">사진 선택</label>
+        <span class="drop-hint">여기로 끌어다 놓아도 됩니다 (여러 장 가능)</span>
+        <span class="train-file-name" id="train-file-name"></span>
+      </div>
 
       <label>또는 링크 (이미지 · 영상 · 게시글 주소)</label>
       <input type="text" id="train-url" placeholder="https://..." />
@@ -41,8 +44,11 @@ function trainPanelMarkup() {
         모아둔 예시를 기준으로 이미지를 분류해봅니다. 결과는 저장되지 않습니다.
         이미지를 붙여넣기(Ctrl+V)해도 됩니다.
       </p>
-      <input type="file" id="test-file" accept="image/*" hidden />
-      <label class="pill file-btn" for="test-file">이미지 선택</label>
+      <div class="drop-zone" id="test-drop">
+        <input type="file" id="test-file" accept="image/*" hidden />
+        <label class="pill file-btn" for="test-file">이미지 선택</label>
+        <span class="drop-hint">여기로 끌어다 놓거나 Ctrl+V</span>
+      </div>
       <div class="train-test" id="test-result"></div>
 
       <h4 class="train-list-head">등록된 예시 <span id="train-count"></span></h4>
@@ -219,11 +225,73 @@ function buildTrainPanel() {
     fileName.textContent = fileInput.files[0] ? fileInput.files[0].name : '';
   });
 
+  // Dropping is the whole point of this panel being tedious otherwise: a drop
+  // of files adds every one of them at the currently selected 분류.
+  function onDrop(zone, handler) {
+    ['dragenter', 'dragover'].forEach((ev) =>
+      zone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        zone.classList.add('over');
+      })
+    );
+    ['dragleave', 'drop'].forEach((ev) =>
+      zone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        zone.classList.remove('over');
+      })
+    );
+    zone.addEventListener('drop', (e) => {
+      const files = [...(e.dataTransfer.files || [])].filter((f) => f.type.startsWith('image/'));
+      const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+      handler(files, url.trim());
+    });
+  }
+
+  async function addSamples(files, url) {
+    if (!files.length && !url) return;
+    addBtn.disabled = true;
+    let done = 0;
+    try {
+      for (const file of files) {
+        fileName.textContent = `업로드 중... ${++done}/${files.length}`;
+        await DB.addTrainingSample({
+          url: await uploadImageToCloudinary(file),
+          kind: 'image',
+          label: labelSelect.value,
+          note: noteInput.value.trim(),
+        });
+      }
+      if (!files.length && url) {
+        await DB.addTrainingSample({
+          url,
+          kind: 'link',
+          label: labelSelect.value,
+          note: noteInput.value.trim(),
+        });
+      }
+      fileName.textContent = `${files.length || 1}건 추가됨`;
+      noteInput.value = '';
+      await renderTrainList();
+    } catch (err) {
+      fileName.textContent = '';
+      alert('추가에 실패했습니다: ' + err.message);
+    } finally {
+      addBtn.disabled = false;
+    }
+  }
+
+  onDrop(overlay.querySelector('#train-drop'), addSamples);
+
   const testInput = overlay.querySelector('#test-file');
   testInput.addEventListener('change', () => {
     const file = testInput.files[0];
     testInput.value = '';
     if (file) runTest(URL.createObjectURL(file));
+  });
+
+  onDrop(overlay.querySelector('#test-drop'), (files, url) => {
+    if (files.length) runTest(URL.createObjectURL(files[0]));
+    else if (url) runTest(url); // remote images usually fail CORS; runTest reports it
   });
 
   // Screenshots usually arrive on the clipboard, not as a file.
