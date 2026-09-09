@@ -776,8 +776,8 @@ select:hover { border-color: var(--accent); }
     top: -1vw;
   }
   .landing-art.mirae {
-    bottom: calc(-53.9vh + 13vw);
-    right: calc(-48.3 * var(--u) - 4vw);
+    bottom: calc(-53.9vh + 20vw);
+    right: calc(-48.3 * var(--u) - 7vw);
   }
 }
 
