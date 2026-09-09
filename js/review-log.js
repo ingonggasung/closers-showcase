@@ -73,7 +73,9 @@ async function renderReviewLog() {
           <div class="train-item-body">
             <div>${verdictTag(s)} <b>${escapeHtml(s.title || '(제목 없음)')}</b></div>
             <p class="train-note">
-              확신도 ${Math.round((s.autoConfidence || 0) * 100)}% ·
+              확신도 ${Math.round((s.autoConfidence || 0) * 100)}%${
+                s.autoSimilarity != null ? ` (유사도 ${s.autoSimilarity.toFixed(2)})` : ''
+              } ·
               ${escapeHtml(rulingText(s))} · ${escapeHtml(s.ownerName || '')}
             </p>
           </div>

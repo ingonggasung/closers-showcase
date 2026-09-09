@@ -110,12 +110,13 @@ const DB = {
   // sweep re-checks anything suspicious.
   // ponytail: trust ceiling of running this client-side; move to a Vercel
   // function if that ever matters.
-  async setAutoFlagSelf(slotId, flagged, confidence) {
+  async setAutoFlagSelf(slotId, flagged, confidence, similarity) {
     if (!currentUser) return;
     await firestore.collection('slots').doc(slotId).update({
       autoChecked: true,
       autoFlag: !!flagged,
       autoConfidence: confidence,
+      autoSimilarity: similarity === undefined ? null : similarity,
       autoBy: 'owner',
       autoCheckedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -123,12 +124,13 @@ const DB = {
 
   // Auto-review verdict on one post. Written by the admin's browser only -
   // there is no server, so the classifier runs where the admin is.
-  async setAutoFlag(slotId, flagged, confidence) {
+  async setAutoFlag(slotId, flagged, confidence, similarity) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('slots').doc(slotId).update({
       autoChecked: true,
       autoFlag: !!flagged,
       autoConfidence: confidence,
+      autoSimilarity: similarity === undefined ? null : similarity,
       autoCheckedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   },

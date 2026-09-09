@@ -131,8 +131,8 @@ async function autoReviewThisPost() {
   try {
     const verdict = await classifyCapture(url);
     if (!verdict) return; // no reference set yet
-    const flagged = verdict.label === '외부' && verdict.confidence >= 0.7;
-    await DB.setAutoFlagSelf(slot.id, flagged, verdict.confidence);
+    const flagged = verdict.label === '외부' && verdict.confidence >= 0.3;
+    await DB.setAutoFlagSelf(slot.id, flagged, verdict.confidence, verdict.similarity);
   } catch (err) {
     console.warn('자동 검토 실패:', err);
   }

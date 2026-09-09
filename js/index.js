@@ -231,7 +231,9 @@ function updateAdultGate() {
 // never a deletion: it puts the post in the admin's 삭제 대기 list. Once the
 // admin starts the trial, flagged posts are hidden from other users for three
 // days instead - still no deletion, so a wrong call costs nothing permanent.
-const AUTO_FLAG_MIN_CONF = 0.7;
+// 0.3 on the fixed scale is a ~0.045 similarity gap - small, but the cost of
+// a flag is only that the admin looks at it.
+const AUTO_FLAG_MIN_CONF = 0.3;
 const CAPTURE_TARGET = 30; // examples per label before proposing the trial
 const TRIAL_DAYS = 3;
 const AUTO_REVIEW_BATCH = 20; // per page load, so opening the feed stays quick
@@ -268,13 +270,14 @@ async function autoReviewPosts() {
     }
     if (!verdict) return; // not enough examples yet - stop, don't spin
     const flagged = verdict.label === '외부' && verdict.confidence >= AUTO_FLAG_MIN_CONF;
+    slot.autoSimilarity = verdict.similarity;
     try {
       if (flagged && autoModeration.autoDelete) {
         // Removed, but archived to autoDeleted first - see DB.autoDeleteSlot.
         await DB.autoDeleteSlot(slot, verdict.confidence);
         allSlots = allSlots.filter((s) => s.id !== slot.id);
       } else {
-        await DB.setAutoFlag(slot.id, flagged, verdict.confidence);
+        await DB.setAutoFlag(slot.id, flagged, verdict.confidence, verdict.similarity);
         Object.assign(slot, { autoChecked: true, autoFlag: flagged });
       }
     } catch (err) {

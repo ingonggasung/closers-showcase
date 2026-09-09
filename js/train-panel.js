@@ -295,10 +295,13 @@ function captureVerdict(vec, idx) {
   // The single closest example decides when it is an explicit 외부 one;
   // otherwise distance to the screenshot set does.
   const isOutside = best.item.capture === '외부' || simIn < idx.threshold;
-  const margin = Math.abs(simIn - idx.threshold) / Math.max(0.2, 1 - idx.threshold);
+  // How far past the cut-off, on a fixed scale: a 0.15 gap in cosine
+  // similarity is already a clear call. The old formula divided by
+  // (1 - threshold), so a high threshold made every verdict look unsure.
+  const confidence = Math.min(1, Math.abs(simIn - idx.threshold) / 0.15);
   return {
     label: isOutside ? '외부' : '인게임',
-    confidence: Math.min(1, Math.max(0, margin)),
+    confidence,
     similarity: simIn,
     threshold: idx.threshold,
     nearest: best,
