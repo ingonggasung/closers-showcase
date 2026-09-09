@@ -1570,3 +1570,7 @@ select:hover { border-color: var(--accent); }
 .train-note { margin: 4px 0 0; font-size: 12px; }
 .train-del { background: none; border: 0; color: var(--muted); font-size: 20px; cursor: pointer; flex: none; }
 .train-del:hover { color: #fff; }
+
+.train-test { margin-top: 10px; }
+.train-test-out { display: flex; align-items: center; gap: 12px; }
+.train-test-out img { width: 92px; height: 92px; object-fit: cover; border-radius: 10px; }

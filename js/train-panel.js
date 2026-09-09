@@ -35,6 +35,15 @@ function trainPanelMarkup() {
         <button class="pill accent" id="train-add">추가</button>
       </div>
 
+      <h4 class="train-list-head">분류 테스트</h4>
+      <p class="train-hint">
+        모아둔 예시를 기준으로 이미지를 분류해봅니다. 결과는 저장되지 않습니다.
+        이미지를 붙여넣기(Ctrl+V)해도 됩니다.
+      </p>
+      <input type="file" id="test-file" accept="image/*" hidden />
+      <label class="pill file-btn" for="test-file">이미지 선택</label>
+      <div class="train-test" id="test-result"></div>
+
       <h4 class="train-list-head">등록된 예시 <span id="train-count"></span></h4>
       <div class="train-list" id="train-list">불러오는 중...</div>
     </div>
@@ -87,6 +96,104 @@ async function renderTrainList() {
   });
 }
 
+// --- classification test ---------------------------------------------------
+// MobileNet feature vectors + a k-nearest-neighbour vote over the labelled
+// samples. Nothing is trained from scratch and nothing runs on a server: the
+// model is a stock pretrained one loaded from a CDN, and the "learning" is
+// just the example set sitting next to the query in feature space.
+
+let mobilenetModel = null;
+let knn = null;
+let knnSampleCount = -1;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = () => reject(new Error('스크립트를 불러오지 못했습니다: ' + src));
+    document.head.appendChild(el);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('이미지를 불러오지 못했습니다'));
+    img.src = src;
+  });
+}
+
+async function ensureModel(status) {
+  if (mobilenetModel) return;
+  status('라이브러리 불러오는 중...');
+  await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js');
+  await loadScript(
+    'https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.4/dist/knn-classifier.min.js'
+  );
+  status('모델 불러오는 중... (처음 한 번만, 약 15MB)');
+  mobilenetModel = await mobilenet.load({ version: 2, alpha: 1.0 });
+}
+
+// Only uploaded images can be used: a pasted arca.live/외부 link is served
+// without CORS headers, so the canvas cannot read its pixels.
+async function ensureKnn(status) {
+  const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
+  if (knn && knnSampleCount === samples.length) return samples;
+
+  knn = knnClassifier.create();
+  knnSampleCount = samples.length;
+  for (let i = 0; i < samples.length; i++) {
+    status(`예시 학습 중... ${i + 1}/${samples.length}`);
+    try {
+      const img = await loadImage(samples[i].url);
+      const feat = mobilenetModel.infer(img, true);
+      knn.addExample(feat, samples[i].label);
+      feat.dispose();
+    } catch (err) {
+      console.warn('건너뜀:', samples[i].url, err);
+    }
+  }
+  return samples;
+}
+
+async function runTest(src) {
+  const box = document.getElementById('test-result');
+  const status = (msg) => {
+    box.innerHTML = `<p class="train-hint">${escapeHtml(msg)}</p>`;
+  };
+  try {
+    await ensureModel(status);
+    const samples = await ensureKnn(status);
+    const labels = Object.keys(knn.getClassExampleCount());
+    if (labels.length < 2) {
+      status('일반과 성인 예시를 각각 최소 한 장씩 등록해야 판정할 수 있습니다.');
+      return;
+    }
+    status('분류 중...');
+    const img = await loadImage(src);
+    const feat = mobilenetModel.infer(img, true);
+    const result = await knn.predictClass(feat, Math.min(5, samples.length));
+    feat.dispose();
+
+    const name = result.label === '수영복' ? '성인' : '일반';
+    const pct = Math.round((result.confidences[result.label] || 0) * 100);
+    box.innerHTML = `
+      <div class="train-test-out">
+        <img src="${escapeHtml(src)}" alt="" />
+        <div>
+          <span class="train-tag ${result.label === '수영복' ? 'adult' : ''}">${name}</span>
+          <p class="train-note">확신도 ${pct}% · 예시 ${samples.length}장 기준</p>
+        </div>
+      </div>`;
+  } catch (err) {
+    status('테스트에 실패했습니다: ' + err.message);
+  }
+}
+
 function buildTrainPanel() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -104,6 +211,22 @@ function buildTrainPanel() {
 
   fileInput.addEventListener('change', () => {
     fileName.textContent = fileInput.files[0] ? fileInput.files[0].name : '';
+  });
+
+  const testInput = overlay.querySelector('#test-file');
+  testInput.addEventListener('change', () => {
+    const file = testInput.files[0];
+    testInput.value = '';
+    if (file) runTest(URL.createObjectURL(file));
+  });
+
+  // Screenshots usually arrive on the clipboard, not as a file.
+  document.addEventListener('paste', (e) => {
+    if (overlay.hidden) return;
+    const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith('image/'));
+    if (!item) return;
+    e.preventDefault();
+    runTest(URL.createObjectURL(item.getAsFile()));
   });
 
   overlay.querySelector('#train-close').addEventListener('click', () => {
