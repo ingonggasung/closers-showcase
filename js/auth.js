@@ -110,6 +110,7 @@ function mountAuthBar(container) {
       container.innerHTML = `
         <div class="auth-user">
           ${isAdmin() ? '<button class="pill" id="auth-train-btn">AI 학습</button>' : ''}
+          ${isAdmin() ? '<button class="pill" id="auth-review-btn">AI 검토 내역</button>' : ''}
           <button class="auth-profile-btn" id="auth-profile-btn">
             ${photo ? `<img src="${photo}" class="auth-avatar" alt="">` : ''}
             <span class="auth-name">${escapeHtml(displayName(user))}</span>
@@ -123,6 +124,8 @@ function mountAuthBar(container) {
       });
       const trainBtn = document.getElementById('auth-train-btn');
       if (trainBtn) trainBtn.addEventListener('click', () => openTrainPanel());
+      const reviewBtn = document.getElementById('auth-review-btn');
+      if (reviewBtn) reviewBtn.addEventListener('click', () => openReviewLog());
       const photoInput = document.getElementById('auth-photo-input');
       photoInput.addEventListener('change', async () => {
         const file = photoInput.files[0];

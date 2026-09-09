@@ -115,6 +115,50 @@ const DB = {
     });
   },
 
+  // Everything the auto-review has looked at. Sorted here rather than in the
+  // query, so no composite index is needed.
+  async getAutoReviewed() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore.collection('slots').where('autoChecked', '==', true).get();
+    return snap.docs
+      .map(docToObj)
+      .sort((a, b) => (b.autoCheckedAt?.seconds || 0) - (a.autoCheckedAt?.seconds || 0));
+  },
+
+  async getAutoDeleted() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore.collection('autoDeleted').get();
+    return snap.docs
+      .map(docToObj)
+      .sort((a, b) => (b.deletedAt?.seconds || 0) - (a.deletedAt?.seconds || 0));
+  },
+
+  // Puts the post back and marks it as a confirmed capture, so the review
+  // will not pick it up and delete it a second time.
+  async restoreAutoDeleted(archiveId) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const doc = await firestore.collection('autoDeleted').doc(archiveId).get();
+    if (!doc.exists) throw new Error('보관 항목을 찾을 수 없습니다.');
+    const d = doc.data();
+    await firestore
+      .collection('slots')
+      .doc(d.slotId)
+      .set({
+        characterId: d.characterId || '',
+        ownerId: d.ownerId || '',
+        ownerName: d.ownerName || '',
+        title: d.title || '',
+        images: d.images || [],
+        category: d.category || '일반',
+        verifiedCapture: true,
+        autoChecked: true,
+        autoFlag: false,
+        restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    await doc.ref.delete();
+  },
+
   // config/autoModeration: { trialStartedAt } - the admin's go-ahead for the
   // 3-day hide-instead-of-delete trial.
   async getAutoModeration() {

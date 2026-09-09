@@ -38,14 +38,15 @@ service cloud.firestore {
     match /slots/{slotId} {
       allow read: if true;
 
-      allow create: if isSignedIn()
+      allow create: if isAdmin()
+        || (isSignedIn()
         && !isBlocked()
         && request.resource.data.ownerId == request.auth.uid
         // A new post is never born already verified - only the admin's
         // ruling (below) may set this. Absent is fine too, so a client
         // predating the field still posts instead of erroring out.
         && (!request.resource.data.keys().hasAny(['verifiedCapture'])
-            || request.resource.data.verifiedCapture == null);
+            || request.resource.data.verifiedCapture == null));
 
       allow update: if isAdmin()
         || (isSignedIn()
