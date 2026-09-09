@@ -125,3 +125,19 @@ function escapeHtml(str) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 })();
+
+
+// Serverless auto-review. Absolute URL so the GitHub Pages copy reaches the
+// same function; keepalive so the request survives the page navigating away.
+const REVIEW_ENDPOINT = 'https://closers-showcase.vercel.app/api/review';
+
+function requestAutoReview(slotId) {
+  try {
+    fetch(REVIEW_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slotId }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}

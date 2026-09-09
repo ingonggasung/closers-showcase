@@ -157,6 +157,9 @@ postSubmitBtn.addEventListener('click', async () => {
       category: postCategorySelect.value,
       claimedGameCapture: postGameCapture.checked,
     });
+    // Fire and forget: the reviewer runs on the server, so leaving the page
+    // (or closing the browser) does not stop it.
+    requestAutoReview(newId);
     closePostModal();
     location.href = `slot.html?id=${encodeURIComponent(newId)}&cid=${encodeURIComponent(characterId)}`;
   } catch (err) {

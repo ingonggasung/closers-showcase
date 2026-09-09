@@ -70,6 +70,13 @@ const DB = {
     return snap.docs.map(docToObj);
   },
 
+  // The browser already embeds every sample to run its own test; storing the
+  // vector means the serverless reviewer can skip that work entirely.
+  async saveSampleEmbedding(id, embedding) {
+    if (!isAdmin()) return;
+    await firestore.collection('trainingSamples').doc(id).update({ embedding });
+  },
+
   async updateTrainingSample(id, fields) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('trainingSamples').doc(id).update(fields);

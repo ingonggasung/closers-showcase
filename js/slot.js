@@ -120,22 +120,13 @@ attachContextMenu(imageRow, () => currentSlot, async (slot) => {
     : 'posts.html';
 });
 
-// Runs right after a post is opened by its author - which, straight after
-// posting, is immediately. Fire and forget: the page never waits on it.
-async function autoReviewThisPost() {
+// Backstop for a post the server has not judged yet - asks again, costs one
+// request, and needs no model in this browser.
+function autoReviewThisPost() {
   const slot = currentSlot;
   if (!slot || slot.autoChecked || slot.verifiedCapture != null) return;
-  if (!(isOwner(slot) || isAdmin())) return;
-  const url = (slot.images || [])[0];
-  if (!url) return;
-  try {
-    const verdict = await classifyCapture(url);
-    if (!verdict) return; // no reference set yet
-    const flagged = verdict.label === '외부' && verdict.confidence >= 0.3;
-    await DB.setAutoFlagSelf(slot.id, flagged, verdict.confidence, verdict.similarity);
-  } catch (err) {
-    console.warn('자동 검토 실패:', err);
-  }
+  if (!(slot.images || []).length) return;
+  requestAutoReview(slot.id);
 }
 
 async function render() {

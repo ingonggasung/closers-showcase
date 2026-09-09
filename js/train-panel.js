@@ -251,13 +251,22 @@ async function ensureIndex(status = () => {}) {
   for (let i = 0; i < samples.length; i++) {
     status(`예시 분석 중... ${i + 1}/${samples.length}`);
     try {
+      const vec = await embed(samples[i].url);
       items.push({
         id: samples[i].id,
         url: samples[i].url,
         label: samples[i].label,
         capture: samples[i].capture === '외부' ? '외부' : '인게임',
-        vec: await embed(samples[i].url),
+        vec,
       });
+      // Round hard: 4 decimals is well inside the noise of the comparison and
+      // keeps the stored document small.
+      if (!Array.isArray(samples[i].embedding) || !samples[i].embedding.length) {
+        DB.saveSampleEmbedding(
+          samples[i].id,
+          vec.map((v) => Math.round(v * 10000) / 10000)
+        ).catch(() => {});
+      }
     } catch (err) {
       console.warn('건너뜀:', samples[i].url, err);
     }

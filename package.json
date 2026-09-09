@@ -1,0 +1,11 @@
+{
+  "name": "closers-showcase",
+  "private": true,
+  "description": "Static fan site plus one serverless function that reviews new posts.",
+  "dependencies": {
+    "@tensorflow-models/mobilenet": "2.1.1",
+    "@tensorflow/tfjs": "4.20.0",
+    "firebase-admin": "12.7.0",
+    "jpeg-js": "0.4.4"
+  }
+}
