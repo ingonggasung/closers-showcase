@@ -759,6 +759,12 @@ select:hover { border-color: var(--accent); }
     width: calc(114.2 * var(--u));
     left: -20vw;
   }
+  .landing-art.eunha {
+    top: -4vw;
+  }
+  .landing-art.mirae {
+    bottom: calc(22.8vw - 74.5 * var(--u));
+  }
 }
 
 /* Per-artwork trim: the alternate figures have different margins in their
