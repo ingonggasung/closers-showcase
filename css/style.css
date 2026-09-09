@@ -768,6 +768,11 @@ select:hover { border-color: var(--accent); }
     height: 112.2vh;
     max-width: 56.1vw;
   }
+  .landing-art.mirae {
+    height: 138.6vh;
+    max-width: 69.3vw;
+    bottom: 2.8vw;
+  }
 }
 
 @keyframes landing-in-left {
