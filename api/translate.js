@@ -46,7 +46,12 @@ async function translateGoogle(texts, target) {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: texts, source: 'ko', target, format: 'text' }),
+      body: JSON.stringify({
+        q: texts,
+        source: 'ko',
+        target: target === 'zh' ? 'zh-CN' : target,
+        format: 'text',
+      }),
     }
   );
   const body = await res.json();
@@ -64,7 +69,7 @@ async function translateOneMyMemory(text, target) {
     'https://api.mymemory.translated.net/get?q=' +
     encodeURIComponent(text) +
     '&langpair=' +
-    encodeURIComponent('ko|' + target) +
+    encodeURIComponent('ko|' + (target === 'zh' ? 'zh-CN' : target)) +
     '&de=' +
     encodeURIComponent(MM_CONTACT);
   const res = await fetch(url);
@@ -118,7 +123,7 @@ module.exports = async (req, res) => {
 
   try {
     const body = req.body || {};
-    const target = body.target === 'ja' ? 'ja' : 'en';
+    const target = ['ja', 'zh'].includes(body.target) ? body.target : 'en';
     const texts = [...new Set((body.texts || []).filter((t) => typeof t === 'string'))]
       .map((t) => t.trim())
       .filter((t) => t && t.length <= MAX_CHARS)
