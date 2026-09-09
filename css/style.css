@@ -765,15 +765,15 @@ select:hover { border-color: var(--accent); }
    source images, so they need their own scale in the landscape framing. */
 @media (min-width: 721px) and (min-aspect-ratio: 1/1) {
   .landing-art.eunha {
-    height: 112.2vh;
-    max-width: 56.1vw;
+    height: 123.4vh;
+    max-width: 61.7vw;
     bottom: -11.5vw;
   }
   .landing-art.mirae {
     height: 138.6vh;
     max-width: 69.3vw;
     bottom: -12.2vw;
-    right: -20.6vw;
+    right: -25.6vw;
   }
 }
 
