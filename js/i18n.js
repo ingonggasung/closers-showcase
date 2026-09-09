@@ -143,6 +143,80 @@ const I18N = {
 
 let currentLang = 'ko';
 
+// --- machine translation for free text -------------------------------------
+// Post titles, costume names, memos and character names cannot live in a
+// dictionary. They go to the serverless translator, which caches every phrase
+// server-side; this keeps a local copy too so a repeat visit costs nothing.
+
+const AUTO_ENDPOINT = 'https://closers-showcase.vercel.app/api/translate';
+const AUTO_CACHE_KEY = 'closers-autotr';
+const HANGUL = /[가-힣]/;
+
+let autoCache = {};
+let autoPending = new Set();
+let autoTimer = null;
+let autoUnavailable = false;
+
+function loadAutoCache() {
+  try {
+    autoCache = JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || '{}');
+  } catch {
+    autoCache = {};
+  }
+}
+
+function saveAutoCache() {
+  try {
+    localStorage.setItem(AUTO_CACHE_KEY, JSON.stringify(autoCache));
+  } catch {}
+}
+
+const autoKey = (text, lang) => lang + '\u0000' + text;
+
+// Nodes waiting on a phrase, so the answer can be dropped straight in.
+const autoNodes = new Map();
+
+function queueAuto(node, text, lang) {
+  const key = autoKey(text, lang);
+  if (autoCache[key] !== undefined) {
+    node.nodeValue = node.nodeValue.replace(text, autoCache[key]);
+    return;
+  }
+  if (autoUnavailable) return;
+  if (!autoNodes.has(key)) autoNodes.set(key, []);
+  autoNodes.get(key).push(node);
+  autoPending.add(text);
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(flushAuto, 200); // one request per burst of rendering
+}
+
+async function flushAuto() {
+  const texts = [...autoPending];
+  autoPending = new Set();
+  if (!texts.length) return;
+  const lang = currentLang;
+  try {
+    const res = await fetch(AUTO_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts, target: lang }),
+    });
+    const data = await res.json();
+    if (data.unconfigured) autoUnavailable = true;
+    Object.entries(data.translations || {}).forEach(([src, out]) => {
+      const key = autoKey(src, lang);
+      autoCache[key] = out;
+      (autoNodes.get(key) || []).forEach((node) => {
+        if (node.isConnected) node.nodeValue = node.nodeValue.replace(src, out);
+      });
+      autoNodes.delete(key);
+    });
+    saveAutoCache();
+  } catch {
+    autoUnavailable = true;
+  }
+}
+
 function detectLang() {
   try {
     const saved = localStorage.getItem(I18N_KEY);
@@ -165,7 +239,15 @@ function translateOne(text, lang) {
 // translates from the source rather than from a previous translation.
 function applyToNode(node, lang) {
   if (node.__ko === undefined) node.__ko = node.nodeValue;
-  node.nodeValue = lang === 'ko' ? node.__ko : translateOne(node.__ko, lang) || node.__ko;
+  if (lang === 'ko') {
+    node.nodeValue = node.__ko;
+    return;
+  }
+  const dict = translateOne(node.__ko, lang);
+  node.nodeValue = dict || node.__ko;
+  // Anything the dictionary does not cover but that is actually Korean is
+  // user-written text - send it to the translator.
+  if (!dict && HANGUL.test(node.__ko)) queueAuto(node, node.__ko.trim(), lang);
 }
 
 const ATTRS = ['placeholder', 'title', 'aria-label'];
@@ -189,6 +271,7 @@ function translateTree(root, lang) {
   }
   if (root.nodeType !== Node.ELEMENT_NODE) return;
   if (root.closest && root.closest('[data-no-i18n]')) return;
+  if (root.closest && root.closest('#train-modal, #auto-banner, .context-menu')) return;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const texts = [];
@@ -247,6 +330,7 @@ function watchForNewContent() {
 
 (function initI18n() {
   currentLang = detectLang();
+  loadAutoCache();
   const start = () => {
     mountLanguagePicker();
     if (currentLang !== 'ko') setLanguage(currentLang);
