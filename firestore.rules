@@ -87,6 +87,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Translation cache and dictionary. Public reads are harmless (the site
+    // shows these strings anyway) and let the admin panel list them; only the
+    // admin edits. The serverless translator writes with the Admin SDK, which
+    // bypasses these rules.
+    match /translations/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Auto-moderation switch. Everyone reads it (their client needs to know
     // whether the trial is on); only the admin flips it.
     match /config/{docId} {

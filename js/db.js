@@ -142,6 +142,30 @@ const DB = {
     });
   },
 
+  // Translation cache, doubling as the editable dictionary. Written by the
+  // serverless translator; the admin edits the same documents to override a
+  // machine translation permanently (see dict-panel.js).
+  async getTranslations(target) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore
+      .collection('translations')
+      .where('target', '==', target)
+      .get();
+    return snap.docs
+      .map(docToObj)
+      .sort((a, b) => (a.source || '').localeCompare(b.source || '', 'ko'));
+  },
+
+  async setTranslation(id, fields) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('translations').doc(id).set(fields, { merge: true });
+  },
+
+  async deleteTranslation(id) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('translations').doc(id).delete();
+  },
+
   // Everything the auto-review has looked at. Sorted here rather than in the
   // query, so no composite index is needed.
   async getAutoReviewed() {

@@ -173,30 +173,18 @@ let currentLang = 'ko';
 // --- machine translation for free text -------------------------------------
 // Post titles, costume names, memos and character names cannot live in a
 // dictionary. They go to the serverless translator, which caches every phrase
-// server-side; this keeps a local copy too so a repeat visit costs nothing.
+// in Firestore - and that cache is also the admin's editable dictionary.
 
 const AUTO_ENDPOINT = 'https://closers-showcase.vercel.app/api/translate';
-const AUTO_CACHE_KEY = 'closers-autotr';
 const HANGUL = /[가-힣]/;
 
+// In-memory only, deliberately: a translation the admin corrects has to take
+// effect for everyone on their next page load, so nothing is kept across
+// visits. The Firestore-side cache already means this costs one request.
 let autoCache = {};
 let autoPending = new Set();
 let autoTimer = null;
 let autoUnavailable = false;
-
-function loadAutoCache() {
-  try {
-    autoCache = JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || '{}');
-  } catch {
-    autoCache = {};
-  }
-}
-
-function saveAutoCache() {
-  try {
-    localStorage.setItem(AUTO_CACHE_KEY, JSON.stringify(autoCache));
-  } catch {}
-}
 
 const autoKey = (text, lang) => lang + ' ' + text;
 
@@ -237,7 +225,6 @@ async function flushAuto() {
       });
       autoNodes.delete(key);
     });
-    saveAutoCache();
   } catch {
     autoUnavailable = true;
   }
@@ -374,7 +361,6 @@ function watchForNewContent() {
 
 (function initI18n() {
   currentLang = detectLang();
-  loadAutoCache();
   const start = () => {
     mountLanguagePicker();
     if (currentLang !== 'ko') setLanguage(currentLang);

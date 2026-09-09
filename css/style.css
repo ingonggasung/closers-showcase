@@ -1625,3 +1625,14 @@ select:hover { border-color: var(--accent); }
 @media (max-width: 720px) {
   #lang-picker.lang-floating { top: 10px; right: 10px; }
 }
+
+/* Translation dictionary */
+.dict-new { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dict-new input { flex: 1; min-width: 180px; margin: 0; }
+.dict-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px; background: var(--panel-2);
+}
+.dict-src { flex: 0 0 38%; font-size: 13px; word-break: break-all; }
+.dict-out { flex: 1; margin: 0; padding: 6px 10px; font-size: 13px; }
+.dict-out.saved { border-color: var(--accent); }
