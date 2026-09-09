@@ -17,7 +17,7 @@
 // Post categories. 19+ is deliberately absent: hosting it would trigger the
 // 청소년보호법 age-verification duty, which needs a real 본인확인기관 contract
 // and a server - neither of which this static site can satisfy.
-const SLOT_CATEGORIES = ['일반', '수영복'];
+const SLOT_CATEGORIES = ['일반', '수영복', '성인'];
 
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };

@@ -24,7 +24,8 @@ function trainPanelMarkup() {
       <label>이 예시는 어느 분류인가</label>
       <select id="train-label">
         <option value="일반">일반</option>
-        <option value="수영복">성인</option>
+        <option value="수영복">수영복</option>
+        <option value="성인">성인</option>
       </select>
 
       <label>메모 (선택)</label>
@@ -75,9 +76,7 @@ async function renderTrainList() {
             : '<span class="train-item-icon">🔗</span>'
         }
         <div class="train-item-body">
-          <span class="train-tag ${s.label === '수영복' ? 'adult' : ''}">${
-            s.label === '수영복' ? '성인' : '일반'
-          }</span>
+          <span class="train-tag ${s.label === '성인' ? 'adult' : ''}">${escapeHtml(s.label)}</span>
           <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a>
           ${s.note ? `<p class="train-note">${escapeHtml(s.note)}</p>` : ''}
         </div>
@@ -170,7 +169,7 @@ async function runTest(src) {
     const samples = await ensureKnn(status);
     const labels = Object.keys(knn.getClassExampleCount());
     if (labels.length < 2) {
-      status('일반과 성인 예시를 각각 최소 한 장씩 등록해야 판정할 수 있습니다.');
+      status('서로 다른 분류의 예시를 최소 두 종류 등록해야 판정할 수 있습니다.');
       return;
     }
     status('분류 중...');
@@ -179,13 +178,12 @@ async function runTest(src) {
     const result = await knn.predictClass(feat, Math.min(5, samples.length));
     feat.dispose();
 
-    const name = result.label === '수영복' ? '성인' : '일반';
     const pct = Math.round((result.confidences[result.label] || 0) * 100);
     box.innerHTML = `
       <div class="train-test-out">
         <img src="${escapeHtml(src)}" alt="" />
         <div>
-          <span class="train-tag ${result.label === '수영복' ? 'adult' : ''}">${name}</span>
+          <span class="train-tag ${result.label === '성인' ? 'adult' : ''}">${escapeHtml(result.label)}</span>
           <p class="train-note">확신도 ${pct}% · 예시 ${samples.length}장 기준</p>
         </div>
       </div>`;

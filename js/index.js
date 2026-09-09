@@ -199,10 +199,10 @@ async function renderFeed() {
   applyFeedFilter();
 }
 
-// The 성인 category (stored as '수영복' on existing posts) stays admin-only
-// until there is a real adult-verification flow, which needs a paid
-// 본인확인기관 contract. Flip adultVisible() to open it up.
-const ADULT_CATEGORY = '수영복';
+// The 성인 category stays admin-only until there is a real
+// adult-verification flow, which needs a paid 본인확인기관 contract.
+// Flip adultVisible() to open it up. 수영복 is public.
+const ADULT_CATEGORY = '성인';
 function adultVisible() {
   return isAdmin();
 }
