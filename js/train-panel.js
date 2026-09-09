@@ -151,15 +151,15 @@ const CATEGORY_LABELS = ['일반', '수영복', '성인']; // '미지정' is del
 const CAPTURE_LABELS = ['인게임', '외부'];
 
 let mobilenetModel = null;
-let captureIndex = null; // { refs: [{id, vec}], outs: [...], threshold, count }
-// One classifier per question, keyed by the label set it answers.
-let knnCache = {};
+// One index for both questions: every image sample embedded once, with its
+// labels attached. Comparison is plain cosine similarity - a registered
+// example matches itself at 1.0, so a training image is never misjudged.
+let sampleIndex = null;
 
-// Editing a sample does not change how many there are, so the count-based
-// cache check cannot see it. Anything that mutates the set calls this.
+// Editing a sample does not change how many there are, so a count check
+// cannot see it. Anything that mutates the set calls this.
 function invalidateModels() {
-  knnCache = {};
-  captureIndex = null;
+  sampleIndex = null;
 }
 
 function loadScript(src) {
@@ -194,37 +194,8 @@ async function ensureModel(status) {
   status('라이브러리 불러오는 중...');
   await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js');
   await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js');
-  await loadScript(
-    'https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.4/dist/knn-classifier.min.js'
-  );
   status('모델 불러오는 중... (처음 한 번만, 약 15MB)');
   mobilenetModel = await mobilenet.load({ version: 2, alpha: 1.0 });
-}
-
-// Only uploaded images can be used: a pasted arca.live/외부 link is served
-// without CORS headers, so the canvas cannot read its pixels.
-async function ensureKnn(labels, status = () => {}) {
-  const key = labels.join('|');
-  const samples = (await DB.getTrainingSamples()).filter(
-    (s) => s.kind === 'image' && labels.includes(s.label)
-  );
-  const cached = knnCache[key];
-  if (cached && cached.count === samples.length) return cached;
-
-  const clf = knnClassifier.create();
-  for (let i = 0; i < samples.length; i++) {
-    status(`예시 학습 중... ${i + 1}/${samples.length}`);
-    try {
-      const img = await loadImage(samples[i].url);
-      const feat = mobilenetModel.infer(img, true);
-      clf.addExample(feat, samples[i].label);
-      feat.dispose();
-    } catch (err) {
-      console.warn('건너뜀:', samples[i].url, err);
-    }
-  }
-  knnCache[key] = { clf, count: samples.length, samples };
-  return knnCache[key];
 }
 
 // --- in-game capture detection ---------------------------------------------
@@ -270,46 +241,75 @@ function calibrate(refs) {
   return sims[Math.max(0, Math.floor(sims.length * 0.05))];
 }
 
-async function ensureCaptureIndex(status = () => {}) {
+// Only uploaded images can be indexed: an external link is served without
+// CORS headers, so the canvas cannot read its pixels.
+async function ensureIndex(status = () => {}) {
   const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
-  if (captureIndex && captureIndex.count === samples.length) return captureIndex;
+  if (sampleIndex && sampleIndex.count === samples.length) return sampleIndex;
 
-  const refs = [];
-  const outs = [];
+  const items = [];
   for (let i = 0; i < samples.length; i++) {
     status(`예시 분석 중... ${i + 1}/${samples.length}`);
     try {
-      const vec = await embed(samples[i].url);
-      (samples[i].capture === '외부' ? outs : refs).push({ id: samples[i].id, vec });
+      items.push({
+        id: samples[i].id,
+        url: samples[i].url,
+        label: samples[i].label,
+        capture: samples[i].capture === '외부' ? '외부' : '인게임',
+        vec: await embed(samples[i].url),
+      });
     } catch (err) {
       console.warn('건너뜀:', samples[i].url, err);
     }
   }
-  captureIndex = { refs, outs, threshold: calibrate(refs), count: samples.length };
-  return captureIndex;
+  const refs = items.filter((it) => it.capture === '인게임');
+  sampleIndex = { items, refs, threshold: calibrate(refs), count: samples.length };
+  return sampleIndex;
+}
+
+// Nearest neighbour, not a k-vote: with an unbalanced set a vote lets the
+// biggest class outnumber the actually-closest example, which is how a
+// registered image ended up classified as something else.
+function nearest(vec, items) {
+  let best = null;
+  for (const it of items) {
+    const sim = cosine(vec, it.vec);
+    if (!best || sim > best.sim) best = { item: it, sim };
+  }
+  return best;
 }
 
 // Returns null when there is nothing to compare against yet.
 async function classifyCapture(imageUrl) {
   await ensureModel(() => {});
-  const idx = await ensureCaptureIndex();
+  const idx = await ensureIndex();
   if (idx.refs.length < 3) return null;
+  return captureVerdict(await embed(imageUrl), idx);
+}
 
-  const vec = await embed(imageUrl);
-  const simIn = Math.max(...idx.refs.map((r) => cosine(vec, r.vec)));
-  const simOut = idx.outs.length ? Math.max(...idx.outs.map((r) => cosine(vec, r.vec))) : -1;
+function captureVerdict(vec, idx) {
+  const best = nearest(vec, idx.items);
+  const inGame = nearest(vec, idx.refs);
+  const simIn = inGame ? inGame.sim : -1;
 
-  // An explicit 외부 example that is a closer match wins outright; otherwise
-  // the distance to the screenshot set decides.
-  const isOutside = simOut > simIn || simIn < idx.threshold;
-  // Confidence = how far past the cut-off it landed, clamped to 0..1.
+  // The single closest example decides when it is an explicit 외부 one;
+  // otherwise distance to the screenshot set does.
+  const isOutside = best.item.capture === '외부' || simIn < idx.threshold;
   const margin = Math.abs(simIn - idx.threshold) / Math.max(0.2, 1 - idx.threshold);
   return {
     label: isOutside ? '외부' : '인게임',
     confidence: Math.min(1, Math.max(0, margin)),
     similarity: simIn,
     threshold: idx.threshold,
+    nearest: best,
   };
+}
+
+function categoryVerdict(vec, idx) {
+  const pool = idx.items.filter((it) => CATEGORY_LABELS.includes(it.label));
+  if (!pool.length) return null;
+  const best = nearest(vec, pool);
+  return { label: best.item.label, similarity: best.sim, nearest: best };
 }
 
 // The feed uses this to decide whether the reference set is big enough to
@@ -408,55 +408,54 @@ async function runTest(src, file) {
   };
   try {
     await ensureModel(status);
+    const idx = await ensureIndex(status);
     status('분류 중...');
-    const img = await loadImage(src);
+    const vec = await embed(src);
 
     const lines = [];
     let predCategory = null;
     let predCapture = null;
+    let shown = null;
 
-    // 1) Which tab it belongs in - needs at least two categories to compare.
-    const { clf, samples } = await ensureKnn(CATEGORY_LABELS, status);
-    const counts = clf.getClassExampleCount();
-    if (Object.keys(counts).length < 2) {
-      const have = Object.keys(counts).length
-        ? Object.entries(counts).map(([l, c]) => `${l} ${c}장`).join(', ')
-        : '0장';
-      lines.push(`<p class="train-note">탭 분류: 예시 부족 (${have})</p>`);
+    const cat = categoryVerdict(vec, idx);
+    if (!cat) {
+      lines.push('<p class="train-note">탭 분류: 예시 부족</p>');
     } else {
-      const feat = mobilenetModel.infer(img, true);
-      const res = await clf.predictClass(feat, Math.min(5, samples.length));
-      feat.dispose();
-      predCategory = res.label;
-      const pct = Math.round((res.confidences[res.label] || 0) * 100);
+      predCategory = cat.label;
+      shown = cat.nearest;
       lines.push(
         `<p class="train-note"><span class="train-tag ${
-          res.label === '성인' ? 'adult' : ''
-        }">${escapeHtml(res.label)}</span> 탭 분류 · 확신도 ${pct}% · 예시 ${samples.length}장</p>`
+          cat.label === '성인' ? 'adult' : ''
+        }">${escapeHtml(cat.label)}</span> 탭 분류 · 유사도 ${cat.similarity.toFixed(2)}</p>`
       );
     }
 
-    // 2) Whether it is an in-game screenshot at all - one-class, so it works
-    //    with only screenshots registered.
-    status('캡처 여부 확인 중...');
-    const cap = await classifyCapture(src);
-    if (!cap) {
+    if (idx.refs.length < 3) {
       lines.push('<p class="train-note">인게임 여부: 예시 부족 (이미지 3장 이상 필요)</p>');
     } else {
+      const cap = captureVerdict(vec, idx);
       predCapture = cap.label;
+      shown = shown || cap.nearest;
       lines.push(
         `<p class="train-note"><span class="train-tag ${
           cap.label === '외부' ? 'adult' : ''
-        }">${cap.label}</span> 인게임 여부 · 유사도 ${cap.similarity.toFixed(2)} (기준 ${cap.threshold.toFixed(
+        }">${cap.label}</span> 인게임 여부 · 유사도 ${cap.similarity.toFixed(
           2
-        )})</p>`
+        )} (기준 ${cap.threshold.toFixed(2)})</p>`
       );
     }
+
+    // Showing what it matched against makes a wrong call diagnosable rather
+    // than mysterious.
+    const matched = shown
+      ? `<p class="train-note">가장 비슷한 예시 (${shown.sim.toFixed(2)}):
+         <img class="match-thumb" src="${escapeHtml(shown.item.url)}" alt="" /></p>`
+      : '';
 
     box.innerHTML = `
       <div class="train-test-out">
         <img src="${escapeHtml(src)}" alt="" />
-        <div>${lines.join('')}</div>
+        <div>${lines.join('')}${matched}</div>
       </div>`;
     renderVerdictBox(predCategory, predCapture);
   } catch (err) {

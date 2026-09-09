@@ -1606,3 +1606,8 @@ select:hover { border-color: var(--accent); }
 
 .rv-actions { display: flex; flex-direction: column; gap: 4px; flex: none; }
 .rv-actions .pill { font-size: 12px; padding: 5px 10px; text-align: center; }
+
+.match-thumb {
+  width: 42px; height: 42px; object-fit: cover; border-radius: 6px;
+  vertical-align: middle; margin-left: 6px;
+}
