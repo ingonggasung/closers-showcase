@@ -96,22 +96,71 @@ function decodeEntities(t) {
     .replace(/&gt;/g, '>');
 }
 
+// --- glossary ---------------------------------------------------------------
+// Terms the admin has fixed by hand are reused when a longer phrase contains
+// them: with 리아 -> Ria on file, "리아 나이트메어" is sent as "Ria 나이트메어"
+// and comes back "Ria Nightmare" instead of whatever the engine invents for a
+// name. Machine translation has no memory of its own; this gives it one.
+
+let glossaryCache = {};
+let glossaryAt = 0;
+const GLOSSARY_TTL_MS = 60 * 1000;
+
+async function getGlossary(target) {
+  if (glossaryCache[target] && Date.now() - glossaryAt < GLOSSARY_TTL_MS) {
+    return glossaryCache[target];
+  }
+  // Queried on target alone: adding `locked` would need a composite index for
+  // no real gain at this size.
+  const snap = await db().collection('translations').where('target', '==', target).get();
+  const terms = [];
+  snap.docs.forEach((doc) => {
+    const d = doc.data();
+    if (d.locked && d.source && d.text) terms.push({ source: d.source, text: d.text });
+  });
+  // Longest first, so a longer term is matched before one of its parts.
+  terms.sort((a, b) => b.source.length - a.source.length);
+  glossaryCache[target] = terms;
+  glossaryAt = Date.now();
+  return terms;
+}
+
+// Substitutes known terms in place. Returns the text unchanged when nothing
+// matches, and never touches a phrase that is entirely one known term - that
+// case is already answered by the cache.
+function applyGlossary(text, terms) {
+  let out = text;
+  let hit = false;
+  for (const t of terms) {
+    if (t.source === text) continue;
+    if (out.includes(t.source)) {
+      out = out.split(t.source).join(' ' + t.text + ' ');
+      hit = true;
+    }
+  }
+  return { text: hit ? out.replace(/\s+/g, ' ').trim() : text, hit };
+}
+
 // Returns a map of the ones that worked; a failure drops that phrase rather
 // than the whole request.
 async function translateBatch(texts, target) {
+  const terms = await getGlossary(target).catch(() => []);
+  // The engine sees the prepared text; the result is stored under the original.
+  const prepared = texts.map((t) => ({ original: t, sent: applyGlossary(t, terms).text }));
+
   if (process.env.GOOGLE_TRANSLATE_KEY) {
-    const list = await translateGoogle(texts, target);
-    return Object.fromEntries(texts.map((t, i) => [t, list[i]]));
+    const list = await translateGoogle(prepared.map((p) => p.sent), target);
+    return Object.fromEntries(prepared.map((p, i) => [p.original, list[i]]));
   }
   const out = {};
-  const queue = [...texts];
+  const queue = [...prepared];
   const workers = Array.from({ length: 8 }, async () => {
     while (queue.length) {
-      const text = queue.shift();
+      const item = queue.shift();
       try {
-        out[text] = await translateOneMyMemory(text, target);
+        out[item.original] = await translateOneMyMemory(item.sent, target);
       } catch (err) {
-        console.warn('translate skipped:', text, err.message);
+        console.warn('translate skipped:', item.original, err.message);
       }
     }
   });

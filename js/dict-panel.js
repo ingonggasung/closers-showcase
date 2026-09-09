@@ -23,8 +23,11 @@ function dictMarkup() {
     <div class="modal-box modal-box-wide" data-no-i18n>
       <h3>번역 사전</h3>
       <p class="train-hint">
-        기계번역 결과를 직접 고칩니다. 여기서 저장한 값이 항상 우선하며,
-        고유명사(캐릭터명·코스튬명)는 여기서 잡아야 합니다.
+        기계번역 결과를 직접 고칩니다. 여기서 저장한 값이 항상 우선하고,
+        <b>새 문구를 번역할 때도 참고 사전으로 쓰입니다</b> — 예를 들어
+        &quot;리아 → Ria&quot;를 넣어두면 &quot;리아 나이트메어&quot;는
+        &quot;Ria Nightmare&quot;로 번역됩니다. 고유명사는 짧은 단위로
+        넣어둘수록 잘 걸립니다.
       </p>
 
       <label>언어</label>
