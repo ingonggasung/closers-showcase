@@ -72,6 +72,12 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // Labelled training examples - admin's own working set, nobody else's
+    // business to read or write.
+    match /trainingSamples/{sampleId} {
+      allow read, write: if isAdmin();
+    }
+
     // User profiles. Public to read (nicknames/avatars show on posts), but a
     // user may only set their own display fields - warningCount and blocked
     // are the admin's alone, which is what makes account blocking

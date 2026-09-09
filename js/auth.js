@@ -109,6 +109,7 @@ function mountAuthBar(container) {
       const photo = displayPhotoURL(user);
       container.innerHTML = `
         <div class="auth-user">
+          ${isAdmin() ? '<button class="pill" id="auth-train-btn">AI 학습</button>' : ''}
           <button class="auth-profile-btn" id="auth-profile-btn">
             ${photo ? `<img src="${photo}" class="auth-avatar" alt="">` : ''}
             <span class="auth-name">${escapeHtml(displayName(user))}</span>
@@ -120,6 +121,8 @@ function mountAuthBar(container) {
       document.getElementById('auth-signout-btn').addEventListener('click', () => {
         signOutUser();
       });
+      const trainBtn = document.getElementById('auth-train-btn');
+      if (trainBtn) trainBtn.addEventListener('click', () => openTrainPanel());
       const photoInput = document.getElementById('auth-photo-input');
       photoInput.addEventListener('change', async () => {
         const file = photoInput.files[0];

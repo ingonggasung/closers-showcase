@@ -6,6 +6,8 @@
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
+//   trainingSamples: { url, kind('image'|'link'), label, note, addedBy, createdAt }
+//               - admin-only labelled examples, see train-panel.js
 //   users:      { photoURL(Cloudinary URL), nickname, warningCount, blocked, blockedAt,
 //               updatedAt } - doc id is the user's uid; a user may only self-write
 //               photoURL/nickname/updatedAt on their own doc (see Firestore rules) -
@@ -22,6 +24,34 @@ function docToObj(doc) {
 }
 
 const DB = {
+  // Labelled reference material for future auto-classification. Admin-only,
+  // both here and in the Firestore rules.
+  async addTrainingSample({ url, kind, label, note }) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const ref = await firestore.collection('trainingSamples').add({
+      url,
+      kind,
+      label,
+      note: note || '',
+      addedBy: currentUser.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  },
+
+  async getTrainingSamples() {
+    const snap = await firestore
+      .collection('trainingSamples')
+      .orderBy('createdAt', 'desc')
+      .get();
+    return snap.docs.map(docToObj);
+  },
+
+  async deleteTrainingSample(id) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('trainingSamples').doc(id).delete();
+  },
+
   async addCharacter({ name, icon }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const existing = await firestore.collection('characters').get();
