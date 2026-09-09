@@ -24,16 +24,17 @@ function trainPanelMarkup() {
       <label>또는 링크 (이미지 · 영상 · 게시글 주소)</label>
       <input type="text" id="train-url" placeholder="https://..." />
 
-      <label>이 예시는 무엇인가</label>
+      <label>탭 분류</label>
       <select id="train-label">
-        <optgroup label="게시글 분류">
-          <option value="일반">일반</option>
-          <option value="수영복">수영복</option>
-          <option value="성인">성인</option>
-        </optgroup>
-        <optgroup label="반례 (선택)">
-          <option value="외부">외부 이미지 (팬아트·합성 등)</option>
-        </optgroup>
+        <option value="일반">일반</option>
+        <option value="수영복">수영복</option>
+        <option value="성인">성인</option>
+      </select>
+
+      <label>인게임 캡처 여부</label>
+      <select id="train-capture">
+        <option value="인게임">인게임 캡처</option>
+        <option value="외부">외부 이미지 (팬아트·합성 등)</option>
       </select>
 
       <label>메모 (선택)</label>
@@ -55,6 +56,7 @@ function trainPanelMarkup() {
         <span class="drop-hint">여기로 끌어다 놓거나 Ctrl+V</span>
       </div>
       <div class="train-test" id="test-result"></div>
+      <div class="train-verdict" id="test-verdict"></div>
 
       <h4 class="train-list-head">등록된 예시 <span id="train-count"></span></h4>
       <div class="train-list" id="train-list">불러오는 중...</div>
@@ -88,6 +90,7 @@ async function renderTrainList() {
         }
         <div class="train-item-body">
           <span class="train-tag ${s.label === '성인' ? 'adult' : ''}">${escapeHtml(s.label)}</span>
+          ${s.capture === '외부' ? '<span class="train-tag adult">외부</span>' : ''}
           <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a>
           ${s.note ? `<p class="train-note">${escapeHtml(s.note)}</p>` : ''}
         </div>
@@ -239,7 +242,7 @@ async function ensureCaptureIndex(status = () => {}) {
     status(`예시 분석 중... ${i + 1}/${samples.length}`);
     try {
       const vec = await embed(samples[i].url);
-      (samples[i].label === '외부' ? outs : refs).push({ id: samples[i].id, vec });
+      (samples[i].capture === '외부' ? outs : refs).push({ id: samples[i].id, vec });
     } catch (err) {
       console.warn('건너뜀:', samples[i].url, err);
     }
@@ -276,12 +279,91 @@ async function classifyCapture(imageUrl) {
 async function captureSampleCounts() {
   const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
   return {
-    인게임: samples.filter((s) => s.label !== '외부').length,
-    외부: samples.filter((s) => s.label === '외부').length,
+    인게임: samples.filter((s) => s.capture !== '외부').length,
+    외부: samples.filter((s) => s.capture === '외부').length,
   };
 }
 
-async function runTest(src) {
+// The file behind the current test result, so a correction can register it.
+let lastTest = null;
+
+// Correcting a wrong call is the only way the set gets better, so the answer
+// goes straight back in as a labelled example.
+function renderVerdictBox(predCategory, predCapture) {
+  const box = document.getElementById('test-verdict');
+  if (!box) return;
+  if (!lastTest || !lastTest.file) {
+    box.innerHTML =
+      '<p class="train-hint">링크로 테스트한 이미지는 정답을 등록할 수 없습니다. 파일이나 붙여넣기로 테스트해주세요.</p>';
+    return;
+  }
+  box.innerHTML = `
+    <div class="verdict-row">
+      <span>이 판정이 맞나요?</span>
+      <button class="pill" id="verdict-ok">맞음</button>
+      <button class="pill" id="verdict-no">틀림 · 정답 알려주기</button>
+    </div>
+    <div class="verdict-fix" id="verdict-fix" hidden>
+      <select id="verdict-label">
+        <option value="일반">일반</option>
+        <option value="수영복">수영복</option>
+        <option value="성인">성인</option>
+      </select>
+      <select id="verdict-capture">
+        <option value="인게임">인게임 캡처</option>
+        <option value="외부">외부 이미지</option>
+      </select>
+      <button class="pill accent" id="verdict-save">정답으로 등록</button>
+    </div>`;
+
+  const fix = box.querySelector('#verdict-fix');
+  const labelSel = box.querySelector('#verdict-label');
+  const capSel = box.querySelector('#verdict-capture');
+  if (predCategory) labelSel.value = predCategory;
+  if (predCapture) capSel.value = predCapture;
+
+  async function save(label, capture) {
+    box.innerHTML = '<p class="train-hint">등록 중...</p>';
+    try {
+      const hash = await fileHash(lastTest.file);
+      if (await DB.isDuplicateTrainingSample({ hash })) {
+        box.innerHTML = '<p class="train-hint">이미 등록된 이미지입니다.</p>';
+        return;
+      }
+      await DB.addTrainingSample({
+        url: await uploadImageToCloudinary(lastTest.file),
+        kind: 'image',
+        label,
+        capture,
+        note: '테스트 정답 등록',
+        hash,
+      });
+      box.innerHTML = `<p class="train-hint">등록했습니다 — ${escapeHtml(label)} · ${escapeHtml(
+        capture
+      )}. 다음 테스트부터 반영됩니다.</p>`;
+      await renderTrainList();
+    } catch (err) {
+      box.innerHTML = `<p class="train-hint">등록에 실패했습니다: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  box.querySelector('#verdict-ok').addEventListener('click', () => {
+    if (!predCategory || !predCapture) {
+      fix.hidden = false;
+      return;
+    }
+    save(predCategory, predCapture);
+  });
+  box.querySelector('#verdict-no').addEventListener('click', () => {
+    fix.hidden = false;
+  });
+  box.querySelector('#verdict-save').addEventListener('click', () =>
+    save(labelSel.value, capSel.value)
+  );
+}
+
+async function runTest(src, file) {
+  lastTest = { src, file: file || null };
   const box = document.getElementById('test-result');
   const status = (msg) => {
     box.innerHTML = `<p class="train-hint">${escapeHtml(msg)}</p>`;
@@ -292,6 +374,8 @@ async function runTest(src) {
     const img = await loadImage(src);
 
     const lines = [];
+    let predCategory = null;
+    let predCapture = null;
 
     // 1) Which tab it belongs in - needs at least two categories to compare.
     const { clf, samples } = await ensureKnn(CATEGORY_LABELS, status);
@@ -305,6 +389,7 @@ async function runTest(src) {
       const feat = mobilenetModel.infer(img, true);
       const res = await clf.predictClass(feat, Math.min(5, samples.length));
       feat.dispose();
+      predCategory = res.label;
       const pct = Math.round((res.confidences[res.label] || 0) * 100);
       lines.push(
         `<p class="train-note"><span class="train-tag ${
@@ -320,6 +405,7 @@ async function runTest(src) {
     if (!cap) {
       lines.push('<p class="train-note">인게임 여부: 예시 부족 (이미지 3장 이상 필요)</p>');
     } else {
+      predCapture = cap.label;
       lines.push(
         `<p class="train-note"><span class="train-tag ${
           cap.label === '외부' ? 'adult' : ''
@@ -334,6 +420,7 @@ async function runTest(src) {
         <img src="${escapeHtml(src)}" alt="" />
         <div>${lines.join('')}</div>
       </div>`;
+    renderVerdictBox(predCategory, predCapture);
   } catch (err) {
     status('테스트에 실패했습니다: ' + err.message);
   }
@@ -351,6 +438,7 @@ function buildTrainPanel() {
   const fileName = overlay.querySelector('#train-file-name');
   const urlInput = overlay.querySelector('#train-url');
   const labelSelect = overlay.querySelector('#train-label');
+  const captureSelect = overlay.querySelector('#train-capture');
   const noteInput = overlay.querySelector('#train-note');
   const addBtn = overlay.querySelector('#train-add');
 
@@ -400,6 +488,7 @@ function buildTrainPanel() {
           url: await uploadImageToCloudinary(file),
           kind: 'image',
           label: labelSelect.value,
+          capture: captureSelect.value,
           note: noteInput.value.trim(),
           hash,
         });
@@ -410,6 +499,7 @@ function buildTrainPanel() {
           url,
           kind: 'link',
           label: labelSelect.value,
+          capture: captureSelect.value,
           note: noteInput.value.trim(),
         });
         added++;
@@ -434,11 +524,11 @@ function buildTrainPanel() {
   testInput.addEventListener('change', () => {
     const file = testInput.files[0];
     testInput.value = '';
-    if (file) runTest(URL.createObjectURL(file));
+    if (file) runTest(URL.createObjectURL(file), file);
   });
 
   onDrop(overlay.querySelector('#test-drop'), (files, url) => {
-    if (files.length) runTest(URL.createObjectURL(files[0]));
+    if (files.length) runTest(URL.createObjectURL(files[0]), files[0]);
     else if (url) runTest(url); // remote images usually fail CORS; runTest reports it
   });
 
@@ -448,7 +538,8 @@ function buildTrainPanel() {
     const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith('image/'));
     if (!item) return;
     e.preventDefault();
-    runTest(URL.createObjectURL(item.getAsFile()));
+    const pasted = item.getAsFile();
+    runTest(URL.createObjectURL(pasted), pasted);
   });
 
   overlay.querySelector('#train-close').addEventListener('click', () => {

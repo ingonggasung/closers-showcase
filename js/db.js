@@ -6,7 +6,8 @@
 //                 order, createdAt }
 //   scraps:     { userId, slotId, createdAt } - doc id is `${userId}_${slotId}`
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
-//   trainingSamples: { url, kind('image'|'link'), label, note, addedBy, createdAt }
+//   trainingSamples: { url, kind('image'|'link'), label(탭 분류), capture('인게임'|'외부'),
+//                      note, hash, addedBy, createdAt }
 //               - admin-only labelled examples, see train-panel.js
 //   config/autoModeration: { trialStartedAt } - see setAutoFlag/startAutoModerationTrial
 //   users:      { photoURL(Cloudinary URL), nickname, warningCount, blocked, blockedAt,
@@ -41,7 +42,7 @@ const DB = {
     return !byUrl.empty;
   },
 
-  async addTrainingSample({ url, kind, label, note, hash }) {
+  async addTrainingSample({ url, kind, label, capture, note, hash }) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     if (await DB.isDuplicateTrainingSample({ url, hash })) {
       throw new Error('이미 등록된 이미지입니다.');
@@ -50,6 +51,9 @@ const DB = {
       url,
       kind,
       label,
+      // Absent on older samples, which were all screenshots - so undefined
+      // reads as 인게임 everywhere this is used.
+      capture: capture || '인게임',
       hash: hash || null,
       note: note || '',
       addedBy: currentUser.uid,
