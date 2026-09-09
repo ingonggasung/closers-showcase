@@ -5,13 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Closers Showcase</title>
 <link rel="icon" id="favicon-link" href="" />
-<link rel="stylesheet" href="css/style.css?v=65" />
+<link rel="stylesheet" href="css/style.css?v=66" />
 </head>
 <body>
 
 <div class="landing">
-  <img class="landing-art left" src="img/tris.webp?v=65" alt="" />
-  <img class="landing-art right" src="img/yuria.webp?v=65" alt="" />
+  <img class="landing-art left" alt="" />
+  <img class="landing-art right" alt="" />
+  <script>
+    // One of the two art pairs per visit. src is set here rather than in the
+    // markup so only the chosen pair is ever downloaded.
+    var pair = Math.random() < .5 ? ['tris', 'yuria'] : ['eunha', 'mirae'];
+    document.querySelector('.landing-art.left').src = 'img/' + pair[0] + '.webp?v=66';
+    document.querySelector('.landing-art.right').src = 'img/' + pair[1] + '.webp?v=66';
+  </script>
   <div class="landing-center">
     <h1 class="landing-title">
       <span class="landing-word-1">Closers</span><br />
