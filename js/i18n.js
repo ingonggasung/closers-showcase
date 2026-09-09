@@ -202,7 +202,6 @@ async function flushAuto() {
       body: JSON.stringify({ texts, target: lang }),
     });
     const data = await res.json();
-    if (data.unconfigured) autoUnavailable = true;
     Object.entries(data.translations || {}).forEach(([src, out]) => {
       const key = autoKey(src, lang);
       autoCache[key] = out;

@@ -1,10 +1,11 @@
 // Machine translation for the parts of the page nobody can put in a
 // dictionary: post titles, costume names, memos, character names.
 //
-// Every result is cached in Firestore, so a phrase is paid for once and then
-// served for free forever after. Without GOOGLE_TRANSLATE_KEY the endpoint
-// reports that it is unconfigured and the client quietly leaves the text in
-// Korean - the site keeps working either way.
+// Every result is cached in Firestore, so a phrase is translated once and
+// then served for free forever after. That makes the actual volume tiny, so
+// the default backend is MyMemory - free, no key, no billing account. If
+// GOOGLE_TRANSLATE_KEY is set it is used instead, since it is better; without
+// it nothing breaks.
 
 const admin = require('firebase-admin');
 const crypto = require('crypto');
@@ -38,7 +39,7 @@ async function readCache(ids) {
   return out;
 }
 
-async function translateBatch(texts, target) {
+async function translateGoogle(texts, target) {
   const key = process.env.GOOGLE_TRANSLATE_KEY;
   const res = await fetch(
     'https://translation.googleapis.com/language/translate/v2?key=' + encodeURIComponent(key),
@@ -51,6 +52,62 @@ async function translateBatch(texts, target) {
   const body = await res.json();
   if (!res.ok) throw new Error(body.error ? body.error.message : 'translate failed');
   return body.data.translations.map((t) => t.translatedText);
+}
+
+// MyMemory takes one phrase per request, which is fine at this volume: the
+// cache means a phrase is only ever fetched once. The contact address raises
+// the daily allowance and is the site's own public one.
+const MM_CONTACT = process.env.TRANSLATE_CONTACT || 'nasac0311@gmail.com';
+
+async function translateOneMyMemory(text, target) {
+  const url =
+    'https://api.mymemory.translated.net/get?q=' +
+    encodeURIComponent(text) +
+    '&langpair=' +
+    encodeURIComponent('ko|' + target) +
+    '&de=' +
+    encodeURIComponent(MM_CONTACT);
+  const res = await fetch(url);
+  const body = await res.json();
+  const out = body && body.responseData && body.responseData.translatedText;
+  // The daily-limit reply comes back as a normal 200 with the warning in the
+  // text, so it has to be caught by hand or the warning gets cached forever.
+  if (!out || /MYMEMORY WARNING|QUOTA|INVALID/i.test(out)) {
+    throw new Error(typeof out === 'string' ? out : 'translate failed');
+  }
+  return decodeEntities(out);
+}
+
+function decodeEntities(t) {
+  return t
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+// Returns a map of the ones that worked; a failure drops that phrase rather
+// than the whole request.
+async function translateBatch(texts, target) {
+  if (process.env.GOOGLE_TRANSLATE_KEY) {
+    const list = await translateGoogle(texts, target);
+    return Object.fromEntries(texts.map((t, i) => [t, list[i]]));
+  }
+  const out = {};
+  const queue = [...texts];
+  const workers = Array.from({ length: 4 }, async () => {
+    while (queue.length) {
+      const text = queue.shift();
+      try {
+        out[text] = await translateOneMyMemory(text, target);
+      } catch (err) {
+        console.warn('translate skipped:', text, err.message);
+      }
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 module.exports = async (req, res) => {
@@ -79,22 +136,21 @@ module.exports = async (req, res) => {
     });
 
     if (missing.length) {
-      if (!process.env.GOOGLE_TRANSLATE_KEY) {
-        // Whatever was cached is still useful; the rest stays Korean.
-        return res.json({ translations: out, unconfigured: true });
-      }
       const fresh = await translateBatch(missing, target);
-      const batch = db().batch();
-      missing.forEach((t, i) => {
-        out[t] = fresh[i];
-        batch.set(db().collection('translations').doc(cacheId(t, target)), {
-          source: t,
-          target,
-          text: fresh[i],
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      const done = Object.keys(fresh);
+      if (done.length) {
+        const batch = db().batch();
+        done.forEach((t) => {
+          out[t] = fresh[t];
+          batch.set(db().collection('translations').doc(cacheId(t, target)), {
+            source: t,
+            target,
+            text: fresh[t],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
         });
-      });
-      await batch.commit();
+        await batch.commit();
+      }
     }
 
     res.json({ translations: out });
