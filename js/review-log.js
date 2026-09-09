@@ -34,6 +34,30 @@ function rulingText(slot) {
   return '관리자 미검토';
 }
 
+// Ruling on a verdict does two things: it records the admin's answer on the
+// post, and it feeds that post's image back in as a labelled example. Every
+// correction makes the next review better - that is the whole point.
+async function judgeReview(slot, aiWasRight) {
+  const reallyIngame = slot.autoFlag ? !aiWasRight : aiWasRight;
+  await DB.setCaptureVerdict(slot.id, reallyIngame);
+  const url = (slot.images || [])[0];
+  if (url) {
+    try {
+      await DB.addTrainingSample({
+        url,
+        kind: 'image',
+        label: slot.category || '일반',
+        capture: reallyIngame ? '인게임' : '외부',
+        note: '검토 내역에서 확인',
+      });
+    } catch (err) {
+      // Already registered is fine; anything else is worth seeing.
+      if (!/이미 등록된/.test(err.message)) console.warn(err);
+    }
+  }
+  if (typeof invalidateModels === 'function') invalidateModels();
+}
+
 async function renderReviewLog() {
   const list = document.getElementById('rv-list');
   const count = document.getElementById('rv-count');
@@ -53,11 +77,31 @@ async function renderReviewLog() {
               ${escapeHtml(rulingText(s))} · ${escapeHtml(s.ownerName || '')}
             </p>
           </div>
-          <a class="pill" href="slot.html?id=${encodeURIComponent(s.id)}">보기</a>
+          <div class="rv-actions">
+            <a class="pill" href="slot.html?id=${encodeURIComponent(s.id)}">보기</a>
+            <button class="pill rv-ok" data-id="${s.id}">맞음</button>
+            <button class="pill rv-no" data-id="${s.id}">틀림</button>
+          </div>
         </div>`
           )
           .join('')
       : '<div class="empty-hint">아직 검토한 게시글이 없어요.</div>';
+
+    const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
+    list.querySelectorAll('.rv-ok, .rv-no').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const slot = byId[btn.dataset.id];
+        const right = btn.classList.contains('rv-ok');
+        btn.disabled = true;
+        try {
+          await judgeReview(slot, right);
+          await renderReviewLog();
+        } catch (err) {
+          alert('처리에 실패했습니다: ' + err.message);
+          btn.disabled = false;
+        }
+      });
+    });
   } catch (err) {
     list.textContent = '불러오지 못했습니다: ' + err.message;
   }

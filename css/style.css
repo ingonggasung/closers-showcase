@@ -1603,3 +1603,6 @@ select:hover { border-color: var(--accent); }
 .train-item-controls select {
   width: auto; min-width: 92px; margin: 0; padding: 4px 8px; font-size: 12px;
 }
+
+.rv-actions { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.rv-actions .pill { font-size: 12px; padding: 5px 10px; text-align: center; }
