@@ -1,10 +1,14 @@
-// Serverless auto-review. The browser only hands over a slot id; everything
-// that decides the verdict is read here, so a post is judged even when nobody
-// has the site open, and the author cannot dictate the answer.
-//
-// Reference embeddings are NOT computed here - the admin's browser stores them
-// on each training sample (see saveSampleEmbedding). A cold start would never
-// finish embedding a hundred images inside the function's time limit.
+/* ── api/review.js ────────────────────────────────────────────────────────────
+   서버(Vercel 함수)에서 도는 자동 검토.
+
+   브라우저는 게시글 번호만 넘깁니다. 판정에 필요한 것은 전부 서버가 직접
+   읽으므로, 아무도 사이트를 안 보고 있어도 판정이 되고 작성자가 결과를
+   조작할 수도 없습니다.
+
+   비교 기준이 되는 예시들의 특징 벡터는 여기서 계산하지 않습니다. 관리자
+   브라우저가 미리 계산해 저장해둔 값을 읽어 씁니다 (함수가 매번 수십 장을
+   계산하면 시간 제한을 넘깁니다).
+   ────────────────────────────────────────────────────────────────────────── */
 
 const admin = require('firebase-admin');
 const tf = require('@tensorflow/tfjs');

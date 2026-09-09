@@ -1,3 +1,14 @@
+/* ── slot.js ──────────────────────────────────────────────────────────────────
+   게시글 상세 페이지(slot.html).
+
+   - render() / renderContent() : 게시글을 불러와 화면 구성
+   - renderImages()             : 이미지 목록. 작성자는 수정 모드에서 삭제·추가 가능
+   - renderDetailPanel()        : 코스튬·악세서리·메모 표
+   - autoReviewThisPost()       : 아직 검토 안 된 글이면 서버에 검토를 요청
+
+   제목·코스튬 항목은 작성자 본인일 때 그 자리에서 바로 고칠 수 있습니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 const params = new URLSearchParams(location.search);
 const slotId = params.get('id');
 const characterId = params.get('cid');

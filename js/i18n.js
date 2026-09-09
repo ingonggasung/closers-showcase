@@ -1,11 +1,19 @@
-// Whole-page translation without touching any markup: the page is written in
-// Korean, and this swaps any text node whose exact text is in the dictionary.
-// Keys are the Korean strings themselves, so nothing needs data-i18n
-// attributes and an untranslated string simply stays Korean.
-//
-// Google's website translate widget shuts down 2026-10-01, so this is
-// deliberately self-contained. Free text the dictionary cannot cover - post
-// titles, memos, character names - goes to /api/translate instead.
+/* ── i18n.js ──────────────────────────────────────────────────────────────────
+   다국어 처리. 원문은 한국어이고, 화면의 한국어를 다른 언어로 바꿔 끼웁니다.
+
+   두 갈래로 나뉩니다:
+     1. 사이트 자체 문구 (버튼·라벨·안내문)
+        → 아래 I18N 사전에 직접 적어둔 값을 씁니다. 정확하고 즉시 반영됩니다.
+     2. 이용자가 쓴 글 (제목·코스튬명·메모·캐릭터명)
+        → 사전에 없으므로 서버(api/translate.js)에 번역을 요청합니다.
+
+   마크업은 손대지 않습니다. 사전의 열쇠가 한국어 문장 자체라서, 화면의 글자를
+   훑어 같은 문장을 찾으면 바꿔치기하는 방식입니다. 나중에 그려지는 목록이나
+   창은 MutationObserver 가 잡아서 나오는 즉시 번역합니다.
+
+   번역하면 안 되는 곳(언어 선택기, 이용자 닉네임, 관리자 도구)은
+   data-no-i18n 표시나 SKIP 선택자로 걸러냅니다.
+   ────────────────────────────────────────────────────────────────────────── */
 
 const I18N_KEY = 'closers-lang';
 

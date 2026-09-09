@@ -1,3 +1,13 @@
+/* ── post-modal.js ────────────────────────────────────────────────────────────
+   코스튬 등록 창.
+
+   흐름:
+     사진 선택 → Cloudinary 업로드 → DB.addSlot() → 상세 페이지로 이동
+     → 동시에 requestAutoReview() 로 서버 자동 검토를 걸어둠
+
+   등록 창은 여러 페이지에서 열리므로, 열 때 캐릭터 목록을 매번 새로 채웁니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Shared "add costume post" modal + floating action button.
 // Expects the modal/FAB markup (see index.html) to be present on the page.
 

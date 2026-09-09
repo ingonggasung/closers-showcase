@@ -1,3 +1,12 @@
+/* ── dnd.js ───────────────────────────────────────────────────────────────────
+   두 가지 드래그 기능.
+
+   - enableDragReorder() : 캐릭터 아이콘을 끌어 순서를 바꾸는 기능(관리자용).
+                           놓는 순간 onReorderDone 으로 새 순서를 넘깁니다.
+   - enableDragScroll()  : 게시글 카드의 이미지를 마우스로 끌어 넘기는 기능.
+                           터치는 브라우저가 알아서 스크롤하므로 마우스만 처리합니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Simple drag-to-reorder for a flat list of sibling elements inside `container`.
 // Items must have draggable="true" and match `itemSelector`.
 function enableDragReorder(container, itemSelector, onReorderDone) {

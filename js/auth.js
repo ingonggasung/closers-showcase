@@ -1,3 +1,17 @@
+/* ── auth.js ──────────────────────────────────────────────────────────────────
+   로그인 상태와 우상단 계정 위젯 담당.
+
+   흐름:
+     구글 로그인 → onAuthChange 로 currentUser 갱신 → 각 페이지가 다시 그림
+
+   - currentUser        : 지금 로그인한 사람. 로그인 안 했으면 null.
+   - currentUserProfile : users 컬렉션에 저장된 닉네임·프로필 사진.
+                          구글 계정 정보보다 이쪽이 우선합니다.
+   - isAdmin()          : 관리자 판정. 화면 표시용이며, 진짜 차단은 서버 규칙이 합니다.
+   - mountAuthBar()     : 로그인 버튼 / 계정 메뉴를 그립니다. 관리자에게는
+                          AI 학습·AI 검토 내역·번역 사전 버튼이 함께 붙습니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Shared auth state. `authReady` resolves once Firebase has determined the
 // initial signed-in/out state, so pages can wait before rendering owner-only UI.
 let currentUser = null;

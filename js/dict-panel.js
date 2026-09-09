@@ -1,9 +1,17 @@
-// Admin-only translation dictionary. The machine translator already caches
-// every phrase it produces in Firestore; this edits that cache directly, so
-// fixing a wrong translation once fixes it for everyone, forever.
-//
-// It exists because machine translation cannot know proper nouns: "모아
-// 디바인 패스트" is Past, not Fast, and "서유리" is a name, not "West Yuri".
+/* ── dict-panel.js ────────────────────────────────────────────────────────────
+   관리자용 "번역 사전" 창.
+
+   기계번역 결과는 이미 Firestore(translations)에 저장되고 있는데, 이 창은
+   그 저장분을 직접 고칩니다. 별도의 사전이 아니라 캐시 그 자체를 고치는 것이라,
+   한 번 고치면 그 뒤로는 계속 그 값이 나갑니다.
+
+   고친 항목(locked)은 두 가지로 쓰입니다:
+     1. 그 문구가 나올 때 그대로 사용
+     2. 새 문구를 번역할 때 참고 사전 - 예: "리아 → Ria" 를 넣어두면
+        "리아 나이트메어" 는 "Ria Nightmare" 로 번역됩니다.
+
+   기계번역이 고유명사를 모른다는 게 이 창이 있는 이유입니다.
+   ────────────────────────────────────────────────────────────────────────── */
 
 let dictOverlay = null;
 let dictLang = 'en';

@@ -1,3 +1,9 @@
+/* ── character.js ─────────────────────────────────────────────────────────────
+   캐릭터 한 명의 게시글만 모아 보여주는 페이지(character.html).
+   목록 자체를 그리는 일은 slot-card.js 가 하고, 여기서는 어떤 캐릭터인지
+   확인하고 그 캐릭터의 게시글만 불러옵니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 const params = new URLSearchParams(location.search);
 const characterId = params.get('id');
 

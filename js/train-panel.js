@@ -1,7 +1,19 @@
-// Admin-only panel for collecting labelled reference material: an image, a
-// video or a page link, tagged with the category it should be sorted into.
-// Nothing is trained in the browser - this builds the labelled set a
-// classifier (or a moderation API's threshold) would later be calibrated on.
+/* ── train-panel.js ───────────────────────────────────────────────────────────
+   관리자용 "AI 학습" 창. 이미지 판별에 쓰는 예시를 모으고 시험해 보는 곳.
+
+   판별은 두 가지 질문에 답합니다:
+     1. 탭 분류      - 일반 / 수영복 / 성인 중 어디인가
+     2. 인게임 여부  - 게임에서 찍은 화면인가, 밖에서 가져온 그림인가
+
+   원리 (모델을 새로 학습시키지 않습니다):
+     - MobileNet 이라는 이미 학습된 모델로 이미지를 숫자 목록(특징 벡터)으로 바꿈
+     - 등록해둔 예시들과 얼마나 닮았는지(코사인 유사도)를 계산
+     - 탭 분류는 "가장 닮은 예시 하나"의 분류를 그대로 씀
+     - 인게임 여부는 "등록된 스크린샷 중 어느 것과도 안 닮으면 외부"로 판정.
+       기준값은 예시들이 서로 얼마나 닮았는지를 재서 자동으로 정합니다.
+
+   그래서 예시를 넣고 빼는 것이 곧 학습입니다. 서버도 GPU도 필요 없습니다.
+   ────────────────────────────────────────────────────────────────────────── */
 
 let trainOverlay = null;
 

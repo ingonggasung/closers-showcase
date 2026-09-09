@@ -1,3 +1,19 @@
+/* ── index.js ─────────────────────────────────────────────────────────────────
+   게시글 목록 페이지(posts.html)의 두뇌. 이 프로젝트에서 가장 큰 파일입니다.
+
+   맡은 일:
+     1. 캐릭터 필터   - 아이콘 목록, 다중 선택, 관리자의 추가·삭제·순서 변경
+     2. 게시글 목록   - 불러오기, 검색, 분류 탭, 벽돌식 배치
+     3. 자동 검토     - 관리자 접속 시 밀린 게시글을 분류기에 넘김
+     4. 자동 조치     - 3일 숨김 테스트 → 결과 확인 → 자동 삭제 켜기
+
+   읽는 순서 추천:
+     renderFeed()        게시글을 불러와 화면에 뿌리는 시작점
+     applyFeedFilter()   검색·캐릭터·분류·숨김 조건을 걸러 실제로 그리는 곳
+     autoReviewPosts()   AI 자동 검토
+     updateAutoBanner()  관리자에게 보이는 안내 배너 (테스트 제안/결과/자동삭제)
+   ────────────────────────────────────────────────────────────────────────── */
+
 const grid = document.getElementById('char-grid');
 const modal = document.getElementById('char-modal');
 const nameInput = document.getElementById('char-name-input');

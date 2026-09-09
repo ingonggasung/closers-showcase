@@ -1,16 +1,17 @@
-// Machine translation for the parts of the page nobody can put in a
-// dictionary: post titles, costume names, memos, character names.
-//
-// Every result is cached in Firestore, so a phrase is translated once and
-// then served for free forever after. That makes the actual volume tiny, so
-// the default backend is MyMemory - free, no key, no billing account. If
-// GOOGLE_TRANSLATE_KEY is set it is used instead, since it is better; without
-// it nothing breaks.
-//
-// Japanese and Chinese are translated from the English rather than straight
-// from the Korean. English is the language the admin actually curates, so
-// every proper noun fixed there - character names, costume names - carries
-// through to the other two instead of being re-invented per language.
+/* ── api/translate.js ─────────────────────────────────────────────────────────
+   서버(Vercel 함수)에서 도는 번역기.
+
+   흐름:
+     캐시 확인 → 없으면 번역 → 캐시에 저장 → 응답
+
+   같은 문구는 평생 한 번만 번역되므로 실제 번역량이 매우 적고, 그래서 무료
+   번역 서비스(MyMemory)로 충분합니다. GOOGLE_TRANSLATE_KEY 를 넣으면 자동으로
+   구글 번역을 씁니다.
+
+   일본어·중국어는 한국어에서 바로 번역하지 않고 영어를 거칩니다. 관리자가
+   실제로 손보는 언어가 영어라서, 거기서 고쳐둔 고유명사가 나머지 언어로도
+   따라가게 하기 위해서입니다.
+   ────────────────────────────────────────────────────────────────────────── */
 
 const admin = require('firebase-admin');
 const crypto = require('crypto');

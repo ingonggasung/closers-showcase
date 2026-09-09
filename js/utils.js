@@ -1,3 +1,15 @@
+/* ── utils.js ─────────────────────────────────────────────────────────────────
+   여러 파일이 같이 쓰는 잡다한 도구 모음.
+
+   - PART_KEYS / PART_LABELS : 코스튬 부위 목록(무기·상의·하의…)의 단일 출처.
+     부위를 추가하려면 여기만 고치면 등록 폼과 상세 화면이 함께 따라갑니다.
+   - escapeHtml() : 이용자가 쓴 글을 innerHTML 에 넣기 전에 반드시 통과시켜야
+     하는 함수. 안 쓰면 남이 쓴 <script> 가 실행됩니다.
+   - debounce() : 연속으로 쏟아지는 이벤트(스크롤·입력)를 마지막 한 번만 처리.
+   - requestAutoReview() : 새 게시글을 서버(api/review.js)에 넘겨 자동 검토를
+     맡깁니다. keepalive 라서 페이지를 떠나도 요청이 살아 있습니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Escapes text before it's interpolated into an innerHTML template.
 // Needed anywhere user-supplied content (names, titles) is shown to other visitors.
 const COSTUME_KEYS = ['weapon', 'hair', 'top', 'bottom', 'gloves', 'shoes'];

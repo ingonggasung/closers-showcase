@@ -1,6 +1,15 @@
-// Admin-only log of what the auto-review did: every post it looked at, its
-// verdict, and the archive of anything auto-deletion removed (with a restore,
-// because a classifier's mistake should be undoable).
+/* ── review-log.js ────────────────────────────────────────────────────────────
+   관리자용 "AI 검토 내역" 창.
+
+   - 확인 대기 : 자동 검토는 끝났지만 관리자가 아직 맞다/틀리다를 안 한 게시글
+   - 확인 완료 : 판정을 마친 것 (접혀 있음)
+   - 자동 삭제 보관함 : 자동 삭제가 지운 게시글. [복구]로 되살릴 수 있습니다.
+
+   맞음/틀림을 누르면 두 가지가 동시에 일어납니다.
+     1) 그 게시글에 관리자 판정을 기록
+     2) 그 이미지를 정답 라벨과 함께 학습 예시로 추가
+   즉 틀린 판정을 고칠수록 다음 판정이 좋아집니다.
+   ────────────────────────────────────────────────────────────────────────── */
 
 let reviewOverlay = null;
 

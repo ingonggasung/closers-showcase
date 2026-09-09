@@ -1,3 +1,15 @@
+/* ── db.js ────────────────────────────────────────────────────────────────────
+   Firestore 접근을 전부 모아둔 계층. 화면 코드는 여기를 통해서만 DB를 만집니다.
+
+   컬렉션 구조는 바로 아래 주석에 정리돼 있습니다. 읽을 때 알아두면 좋은 것:
+
+   - 함수 안의 isAdmin() 검사는 "실수 방지"용입니다. 진짜 방어선은
+     firestore.rules 이고, 브라우저 코드는 얼마든지 우회될 수 있습니다.
+   - verifiedCapture : 관리자의 최종 판정. auto* 필드보다 항상 우선합니다.
+   - auto* 필드      : 자동 검토(AI)가 쓴 값. 관리자가 판정하면 무시됩니다.
+   - translations    : 번역 캐시이자 관리자가 고치는 번역 사전. 같은 문서입니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Firestore-backed data layer for Closers Showcase.
 // Collections:
 //   characters: { name, icon(Cloudinary URL), ownerId, ownerName, order, createdAt }

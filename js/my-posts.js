@@ -1,3 +1,7 @@
+/* ── my-posts.js ──────────────────────────────────────────────────────────────
+   내가 쓴 게시글 목록(my-posts.html). 로그인 필요.
+   ────────────────────────────────────────────────────────────────────────── */
+
 const myPostsGrid = document.getElementById('my-posts-grid');
 
 mountAuthBar(document.getElementById('auth-bar'));

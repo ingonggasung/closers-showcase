@@ -1,3 +1,14 @@
+/* ── context-menu.js ──────────────────────────────────────────────────────────
+   우클릭(모바일은 길게 누르기) 메뉴.
+
+   - openContextMenu(x, y, items) : 아무 데나 메뉴를 띄웁니다.
+   - attachContextMenu(el, slot)  : 게시글 카드에 메뉴를 붙입니다. 보이는 항목은
+                                    보는 사람에 따라 다릅니다.
+       누구나   : 게시글 보기, 스크랩, 공유, 신고
+       작성자   : + 수정, 삭제
+       관리자   : + 게임 캡처 확인/아님, 유저 경고, 유저 차단
+   ────────────────────────────────────────────────────────────────────────── */
+
 // Right-click (desktop) / long-press (touch) context menu for posts:
 // 스크랩 (scrap/bookmark), 공유 (share), 신고 (report, hidden on your own
 // post), and 삭제 (delete, owner/admin only).

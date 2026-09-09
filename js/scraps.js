@@ -1,3 +1,8 @@
+/* ── scraps.js ────────────────────────────────────────────────────────────────
+   내가 스크랩한 게시글 목록(scraps.html). 스크랩 기록은 본인만 읽을 수 있게
+   보안 규칙으로 막혀 있습니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 const scrapGrid = document.getElementById('scrap-grid');
 
 mountAuthBar(document.getElementById('auth-bar'));
