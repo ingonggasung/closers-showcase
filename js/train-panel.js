@@ -31,8 +31,7 @@ function trainPanelMarkup() {
           <option value="수영복">수영복</option>
           <option value="성인">성인</option>
         </optgroup>
-        <optgroup label="인게임 캡처 여부">
-          <option value="인게임">인게임 캡처</option>
+        <optgroup label="반례 (선택)">
           <option value="외부">외부 이미지 (팬아트·합성 등)</option>
         </optgroup>
       </select>
@@ -185,28 +184,101 @@ async function ensureKnn(labels, status = () => {}) {
   return knnCache[key];
 }
 
-// Used by the feed's auto-review. Returns null when there aren't examples of
-// both 인게임 and 외부 yet - no examples, no opinion.
-async function classifyCapture(imageUrl) {
-  await ensureModel(() => {});
-  const { clf, samples } = await ensureKnn(CAPTURE_LABELS);
-  if (Object.keys(clf.getClassExampleCount()).length < 2) return null;
-  const img = await loadImage(imageUrl);
-  const feat = mobilenetModel.infer(img, true);
-  const res = await clf.predictClass(feat, Math.min(5, samples.length));
-  feat.dispose();
-  return { label: res.label, confidence: res.confidences[res.label] || 0 };
+// --- in-game capture detection ---------------------------------------------
+// Every registered example is an in-game screenshot unless it was explicitly
+// labelled 외부, so this is a one-class problem: something is "외부" when it
+// does not look like anything in the reference set. No counter-examples are
+// needed - a picture far enough from every screenshot we know is the answer.
+
+let captureIndex = null; // { refs: [{id, vec}], outs: [...], threshold, count }
+
+function unit(arr) {
+  let n = 0;
+  for (const v of arr) n += v * v;
+  n = Math.sqrt(n) || 1;
+  return arr.map((v) => v / n);
 }
 
-// How many capture examples exist per label - the feed uses this to decide
-// whether the labelled set is big enough to propose the trial.
+function cosine(a, b) {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+async function embed(url) {
+  const img = await loadImage(url);
+  const feat = mobilenetModel.infer(img, true);
+  const arr = unit(Array.from(await feat.data()));
+  feat.dispose();
+  return arr;
+}
+
+// The cut-off is read off the reference set itself: how similar is each
+// screenshot to its nearest neighbour among the others? Anything less typical
+// than the bottom 5% of those is treated as not belonging.
+function calibrate(refs) {
+  if (refs.length < 4) return 0.55; // too few to measure; a deliberately loose default
+  const sims = refs.map((r, i) => {
+    let best = -1;
+    refs.forEach((o, j) => {
+      if (i !== j) best = Math.max(best, cosine(r.vec, o.vec));
+    });
+    return best;
+  });
+  sims.sort((a, b) => a - b);
+  return sims[Math.max(0, Math.floor(sims.length * 0.05))];
+}
+
+async function ensureCaptureIndex(status = () => {}) {
+  const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
+  if (captureIndex && captureIndex.count === samples.length) return captureIndex;
+
+  const refs = [];
+  const outs = [];
+  for (let i = 0; i < samples.length; i++) {
+    status(`예시 분석 중... ${i + 1}/${samples.length}`);
+    try {
+      const vec = await embed(samples[i].url);
+      (samples[i].label === '외부' ? outs : refs).push({ id: samples[i].id, vec });
+    } catch (err) {
+      console.warn('건너뜀:', samples[i].url, err);
+    }
+  }
+  captureIndex = { refs, outs, threshold: calibrate(refs), count: samples.length };
+  return captureIndex;
+}
+
+// Returns null when there is nothing to compare against yet.
+async function classifyCapture(imageUrl) {
+  await ensureModel(() => {});
+  const idx = await ensureCaptureIndex();
+  if (idx.refs.length < 3) return null;
+
+  const vec = await embed(imageUrl);
+  const simIn = Math.max(...idx.refs.map((r) => cosine(vec, r.vec)));
+  const simOut = idx.outs.length ? Math.max(...idx.outs.map((r) => cosine(vec, r.vec))) : -1;
+
+  // An explicit 외부 example that is a closer match wins outright; otherwise
+  // the distance to the screenshot set decides.
+  const isOutside = simOut > simIn || simIn < idx.threshold;
+  // Confidence = how far past the cut-off it landed, clamped to 0..1.
+  const margin = Math.abs(simIn - idx.threshold) / Math.max(0.2, 1 - idx.threshold);
+  return {
+    label: isOutside ? '외부' : '인게임',
+    confidence: Math.min(1, Math.max(0, margin)),
+    similarity: simIn,
+    threshold: idx.threshold,
+  };
+}
+
+// The feed uses this to decide whether the reference set is big enough to
+// propose the trial.
 async function captureSampleCounts() {
-  const samples = (await DB.getTrainingSamples()).filter(
-    (s) => s.kind === 'image' && CAPTURE_LABELS.includes(s.label)
-  );
-  const out = {};
-  CAPTURE_LABELS.forEach((l) => (out[l] = samples.filter((s) => s.label === l).length));
-  return out;
+  const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
+  return {
+    인게임: samples.filter((s) => s.label !== '외부').length,
+    외부: samples.filter((s) => s.label === '외부').length,
+  };
 }
 
 async function runTest(src) {
@@ -219,29 +291,41 @@ async function runTest(src) {
     status('분류 중...');
     const img = await loadImage(src);
 
-    // Two independent questions, each answered only if it has examples.
     const lines = [];
-    for (const [name, labels] of [
-      ['분류', CATEGORY_LABELS],
-      ['캡처', CAPTURE_LABELS],
-    ]) {
-      const { clf, samples } = await ensureKnn(labels, status);
-      const counts = clf.getClassExampleCount();
-      if (Object.keys(counts).length < 2) {
-        const have = Object.keys(counts).length
-          ? Object.entries(counts).map(([l, c]) => `${l} ${c}장`).join(', ')
-          : '0장';
-        lines.push(`<p class="train-note">${name}: 예시 부족 (${have})</p>`);
-        continue;
-      }
+
+    // 1) Which tab it belongs in - needs at least two categories to compare.
+    const { clf, samples } = await ensureKnn(CATEGORY_LABELS, status);
+    const counts = clf.getClassExampleCount();
+    if (Object.keys(counts).length < 2) {
+      const have = Object.keys(counts).length
+        ? Object.entries(counts).map(([l, c]) => `${l} ${c}장`).join(', ')
+        : '0장';
+      lines.push(`<p class="train-note">탭 분류: 예시 부족 (${have})</p>`);
+    } else {
       const feat = mobilenetModel.infer(img, true);
       const res = await clf.predictClass(feat, Math.min(5, samples.length));
       feat.dispose();
       const pct = Math.round((res.confidences[res.label] || 0) * 100);
       lines.push(
         `<p class="train-note"><span class="train-tag ${
-          res.label === '성인' || res.label === '외부' ? 'adult' : ''
-        }">${escapeHtml(res.label)}</span> ${name} · 확신도 ${pct}% · 예시 ${samples.length}장</p>`
+          res.label === '성인' ? 'adult' : ''
+        }">${escapeHtml(res.label)}</span> 탭 분류 · 확신도 ${pct}% · 예시 ${samples.length}장</p>`
+      );
+    }
+
+    // 2) Whether it is an in-game screenshot at all - one-class, so it works
+    //    with only screenshots registered.
+    status('캡처 여부 확인 중...');
+    const cap = await classifyCapture(src);
+    if (!cap) {
+      lines.push('<p class="train-note">인게임 여부: 예시 부족 (이미지 3장 이상 필요)</p>');
+    } else {
+      lines.push(
+        `<p class="train-note"><span class="train-tag ${
+          cap.label === '외부' ? 'adult' : ''
+        }">${cap.label}</span> 인게임 여부 · 유사도 ${cap.similarity.toFixed(2)} (기준 ${cap.threshold.toFixed(
+          2
+        )})</p>`
       );
     }
 

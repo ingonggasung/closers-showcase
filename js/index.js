@@ -441,7 +441,7 @@ async function updateAutoBanner() {
   } catch {
     return;
   }
-  if (Object.values(counts).some((n) => n < CAPTURE_TARGET)) {
+  if (counts['인게임'] < CAPTURE_TARGET) {
     if (existing) existing.remove();
     return;
   }
