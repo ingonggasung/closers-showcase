@@ -130,6 +130,13 @@ function loadScript(src) {
   });
 }
 
+// Content hash, so re-uploading the same file is caught even though
+// Cloudinary would hand it a brand new URL.
+async function fileHash(file) {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -293,15 +300,26 @@ function buildTrainPanel() {
     if (!files.length && !url) return;
     addBtn.disabled = true;
     let done = 0;
+    let added = 0;
+    const skipped = [];
     try {
       for (const file of files) {
-        fileName.textContent = `업로드 중... ${++done}/${files.length}`;
+        fileName.textContent = `확인 중... ${++done}/${files.length}`;
+        // Checked before the upload, so a duplicate never reaches Cloudinary.
+        const hash = await fileHash(file);
+        if (await DB.isDuplicateTrainingSample({ hash })) {
+          skipped.push(file.name);
+          continue;
+        }
+        fileName.textContent = `업로드 중... ${done}/${files.length}`;
         await DB.addTrainingSample({
           url: await uploadImageToCloudinary(file),
           kind: 'image',
           label: labelSelect.value,
           note: noteInput.value.trim(),
+          hash,
         });
+        added++;
       }
       if (!files.length && url) {
         await DB.addTrainingSample({
@@ -310,8 +328,12 @@ function buildTrainPanel() {
           label: labelSelect.value,
           note: noteInput.value.trim(),
         });
+        added++;
       }
-      fileName.textContent = `${files.length || 1}건 추가됨`;
+      fileName.textContent = `${added}건 추가됨` + (skipped.length ? ` · 중복 ${skipped.length}건 제외` : '');
+      if (skipped.length) {
+        alert('이미 등록된 이미지라 건너뛰었습니다:\n' + skipped.join('\n'));
+      }
       noteInput.value = '';
       await renderTrainList();
     } catch (err) {
@@ -353,32 +375,18 @@ function buildTrainPanel() {
   });
 
   addBtn.addEventListener('click', async () => {
-    const file = fileInput.files[0];
+    const files = [...fileInput.files];
     const url = urlInput.value.trim();
-    if (!file && !url) {
+    if (!files.length && !url) {
       alert('이미지 파일이나 링크 중 하나는 넣어주세요.');
       return;
     }
-    addBtn.disabled = true;
     addBtn.textContent = '추가 중...';
-    try {
-      await DB.addTrainingSample({
-        url: file ? await uploadImageToCloudinary(file) : url,
-        kind: file ? 'image' : 'link',
-        label: labelSelect.value,
-        note: noteInput.value.trim(),
-      });
-      fileInput.value = '';
-      fileName.textContent = '';
-      urlInput.value = '';
-      noteInput.value = '';
-      await renderTrainList();
-    } catch (err) {
-      alert('추가에 실패했습니다: ' + err.message);
-    } finally {
-      addBtn.disabled = false;
-      addBtn.textContent = '추가';
-    }
+    // Same path as a drop, so the duplicate check cannot be bypassed here.
+    await addSamples(files, url);
+    fileInput.value = '';
+    urlInput.value = '';
+    addBtn.textContent = '추가';
   });
 
   return overlay;

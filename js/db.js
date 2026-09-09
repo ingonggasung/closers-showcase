@@ -27,18 +27,30 @@ function docToObj(doc) {
 const DB = {
   // Labelled reference material for future auto-classification. Admin-only,
   // both here and in the Firestore rules.
-  async addTrainingSample({ url, kind, label, note }) {
+  // ponytail: exact-bytes dedup via SHA-256. A re-encoded or resized copy of
+  // the same picture still gets through - swap in a perceptual hash if that
+  // starts happening often.
+  async isDuplicateTrainingSample({ url, hash }) {
+    const col = firestore.collection('trainingSamples');
+    if (hash) {
+      const byHash = await col.where('hash', '==', hash).limit(1).get();
+      if (!byHash.empty) return true;
+    }
+    if (!url) return false;
+    const byUrl = await col.where('url', '==', url).limit(1).get();
+    return !byUrl.empty;
+  },
+
+  async addTrainingSample({ url, kind, label, note, hash }) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
-    const dup = await firestore
-      .collection('trainingSamples')
-      .where('url', '==', url)
-      .limit(1)
-      .get();
-    if (!dup.empty) throw new Error('이미 등록된 링크입니다.');
+    if (await DB.isDuplicateTrainingSample({ url, hash })) {
+      throw new Error('이미 등록된 이미지입니다.');
+    }
     const ref = await firestore.collection('trainingSamples').add({
       url,
       kind,
       label,
+      hash: hash || null,
       note: note || '',
       addedBy: currentUser.uid,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
