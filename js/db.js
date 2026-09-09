@@ -8,6 +8,7 @@
 //   reports:    { slotId, reporterId, reporterName, reason, createdAt }
 //   trainingSamples: { url, kind('image'|'link'), label, note, addedBy, createdAt }
 //               - admin-only labelled examples, see train-panel.js
+//   config/autoModeration: { trialStartedAt } - see setAutoFlag/startAutoModerationTrial
 //   users:      { photoURL(Cloudinary URL), nickname, warningCount, blocked, blockedAt,
 //               updatedAt } - doc id is the user's uid; a user may only self-write
 //               photoURL/nickname/updatedAt on their own doc (see Firestore rules) -
@@ -56,6 +57,33 @@ const DB = {
   async deleteTrainingSample(id) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('trainingSamples').doc(id).delete();
+  },
+
+  // Auto-review verdict on one post. Written by the admin's browser only -
+  // there is no server, so the classifier runs where the admin is.
+  async setAutoFlag(slotId, flagged, confidence) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore.collection('slots').doc(slotId).update({
+      autoChecked: true,
+      autoFlag: !!flagged,
+      autoConfidence: confidence,
+      autoCheckedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  },
+
+  // config/autoModeration: { trialStartedAt } - the admin's go-ahead for the
+  // 3-day hide-instead-of-delete trial.
+  async getAutoModeration() {
+    const doc = await firestore.collection('config').doc('autoModeration').get();
+    return doc.exists ? doc.data() : {};
+  },
+
+  async startAutoModerationTrial() {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    await firestore
+      .collection('config')
+      .doc('autoModeration')
+      .set({ trialStartedAt: firebase.firestore.FieldValue.serverTimestamp() });
   },
 
   async addCharacter({ name, icon }) {

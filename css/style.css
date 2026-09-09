@@ -1582,3 +1582,10 @@ select:hover { border-color: var(--accent); }
 }
 .drop-zone.over { border-color: var(--accent); background: rgba(255,255,255,.04); }
 .drop-hint { color: var(--muted); font-size: 13px; }
+
+.trial-offer {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 10px 0 16px; padding: 12px 14px;
+  border: 1px solid var(--accent); border-radius: 12px;
+  background: rgba(255,255,255,.03); font-size: 14px;
+}

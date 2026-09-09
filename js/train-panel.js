@@ -24,11 +24,17 @@ function trainPanelMarkup() {
       <label>또는 링크 (이미지 · 영상 · 게시글 주소)</label>
       <input type="text" id="train-url" placeholder="https://..." />
 
-      <label>이 예시는 어느 분류인가</label>
+      <label>이 예시는 무엇인가</label>
       <select id="train-label">
-        <option value="일반">일반</option>
-        <option value="수영복">수영복</option>
-        <option value="성인">성인</option>
+        <optgroup label="게시글 분류">
+          <option value="일반">일반</option>
+          <option value="수영복">수영복</option>
+          <option value="성인">성인</option>
+        </optgroup>
+        <optgroup label="인게임 캡처 여부">
+          <option value="인게임">인게임 캡처</option>
+          <option value="외부">외부 이미지 (팬아트·합성 등)</option>
+        </optgroup>
       </select>
 
       <label>메모 (선택)</label>
@@ -107,9 +113,12 @@ async function renderTrainList() {
 // model is a stock pretrained one loaded from a CDN, and the "learning" is
 // just the example set sitting next to the query in feature space.
 
+const CATEGORY_LABELS = ['일반', '수영복', '성인'];
+const CAPTURE_LABELS = ['인게임', '외부'];
+
 let mobilenetModel = null;
-let knn = null;
-let knnSampleCount = -1;
+// One classifier per question, keyed by the label set it answers.
+const knnCache = {};
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -145,24 +154,52 @@ async function ensureModel(status) {
 
 // Only uploaded images can be used: a pasted arca.live/외부 link is served
 // without CORS headers, so the canvas cannot read its pixels.
-async function ensureKnn(status) {
-  const samples = (await DB.getTrainingSamples()).filter((s) => s.kind === 'image');
-  if (knn && knnSampleCount === samples.length) return samples;
+async function ensureKnn(labels, status = () => {}) {
+  const key = labels.join('|');
+  const samples = (await DB.getTrainingSamples()).filter(
+    (s) => s.kind === 'image' && labels.includes(s.label)
+  );
+  const cached = knnCache[key];
+  if (cached && cached.count === samples.length) return cached;
 
-  knn = knnClassifier.create();
-  knnSampleCount = samples.length;
+  const clf = knnClassifier.create();
   for (let i = 0; i < samples.length; i++) {
     status(`예시 학습 중... ${i + 1}/${samples.length}`);
     try {
       const img = await loadImage(samples[i].url);
       const feat = mobilenetModel.infer(img, true);
-      knn.addExample(feat, samples[i].label);
+      clf.addExample(feat, samples[i].label);
       feat.dispose();
     } catch (err) {
       console.warn('건너뜀:', samples[i].url, err);
     }
   }
-  return samples;
+  knnCache[key] = { clf, count: samples.length, samples };
+  return knnCache[key];
+}
+
+// Used by the feed's auto-review. Returns null when there aren't examples of
+// both 인게임 and 외부 yet - no examples, no opinion.
+async function classifyCapture(imageUrl) {
+  await ensureModel(() => {});
+  const { clf, samples } = await ensureKnn(CAPTURE_LABELS);
+  if (Object.keys(clf.getClassExampleCount()).length < 2) return null;
+  const img = await loadImage(imageUrl);
+  const feat = mobilenetModel.infer(img, true);
+  const res = await clf.predictClass(feat, Math.min(5, samples.length));
+  feat.dispose();
+  return { label: res.label, confidence: res.confidences[res.label] || 0 };
+}
+
+// How many capture examples exist per label - the feed uses this to decide
+// whether the labelled set is big enough to propose the trial.
+async function captureSampleCounts() {
+  const samples = (await DB.getTrainingSamples()).filter(
+    (s) => s.kind === 'image' && CAPTURE_LABELS.includes(s.label)
+  );
+  const out = {};
+  CAPTURE_LABELS.forEach((l) => (out[l] = samples.filter((s) => s.label === l).length));
+  return out;
 }
 
 async function runTest(src) {
@@ -172,34 +209,39 @@ async function runTest(src) {
   };
   try {
     await ensureModel(status);
-    const samples = await ensureKnn(status);
-    const counts = knn.getClassExampleCount();
-    const labels = Object.keys(counts);
-    if (labels.length < 2) {
-      const have = labels.length
-        ? labels.map((l) => `${l} ${counts[l]}장`).join(', ')
-        : '0장';
-      status(
-        `판정하려면 서로 다른 분류의 이미지 예시가 필요합니다. 현재 사용 가능: ${have}. ` +
-          '링크로 등록한 예시는 외부 사이트의 보안정책(CORS) 때문에 읽을 수 없어 제외됩니다 - ' +
-          '이미지 파일로 올려주세요.'
-      );
-      return;
-    }
     status('분류 중...');
     const img = await loadImage(src);
-    const feat = mobilenetModel.infer(img, true);
-    const result = await knn.predictClass(feat, Math.min(5, samples.length));
-    feat.dispose();
 
-    const pct = Math.round((result.confidences[result.label] || 0) * 100);
+    // Two independent questions, each answered only if it has examples.
+    const lines = [];
+    for (const [name, labels] of [
+      ['분류', CATEGORY_LABELS],
+      ['캡처', CAPTURE_LABELS],
+    ]) {
+      const { clf, samples } = await ensureKnn(labels, status);
+      const counts = clf.getClassExampleCount();
+      if (Object.keys(counts).length < 2) {
+        const have = Object.keys(counts).length
+          ? Object.entries(counts).map(([l, c]) => `${l} ${c}장`).join(', ')
+          : '0장';
+        lines.push(`<p class="train-note">${name}: 예시 부족 (${have})</p>`);
+        continue;
+      }
+      const feat = mobilenetModel.infer(img, true);
+      const res = await clf.predictClass(feat, Math.min(5, samples.length));
+      feat.dispose();
+      const pct = Math.round((res.confidences[res.label] || 0) * 100);
+      lines.push(
+        `<p class="train-note"><span class="train-tag ${
+          res.label === '성인' || res.label === '외부' ? 'adult' : ''
+        }">${escapeHtml(res.label)}</span> ${name} · 확신도 ${pct}% · 예시 ${samples.length}장</p>`
+      );
+    }
+
     box.innerHTML = `
       <div class="train-test-out">
         <img src="${escapeHtml(src)}" alt="" />
-        <div>
-          <span class="train-tag ${result.label === '성인' ? 'adult' : ''}">${escapeHtml(result.label)}</span>
-          <p class="train-note">확신도 ${pct}% · 예시 ${samples.length}장 기준</p>
-        </div>
+        <div>${lines.join('')}</div>
       </div>`;
   } catch (err) {
     status('테스트에 실패했습니다: ' + err.message);

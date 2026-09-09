@@ -53,7 +53,10 @@ service cloud.firestore {
             && resource.data.ownerId == request.auth.uid
             // Owners may edit their own post, but not its capture ruling
             // or who owns it.
-            && !changedKeys().hasAny(['verifiedCapture', 'verifiedAt', 'ownerId']));
+            && !changedKeys().hasAny([
+                 'verifiedCapture', 'verifiedAt', 'ownerId',
+                 'autoChecked', 'autoFlag', 'autoConfidence', 'autoCheckedAt'
+               ]));
 
       allow delete: if isAdmin()
         || (isSignedIn() && resource.data.ownerId == request.auth.uid);
@@ -76,6 +79,13 @@ service cloud.firestore {
     // business to read or write.
     match /trainingSamples/{sampleId} {
       allow read, write: if isAdmin();
+    }
+
+    // Auto-moderation switch. Everyone reads it (their client needs to know
+    // whether the trial is on); only the admin flips it.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // User profiles. Public to read (nicknames/avatars show on posts), but a

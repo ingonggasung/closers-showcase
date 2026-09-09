@@ -189,6 +189,7 @@ async function renderFeed() {
     updateFaviconBadge();
   }
 
+  autoModeration = await DB.getAutoModeration().catch(() => ({}));
   updateReviewProgress();
 
   if (allSlots.length === 0) {
@@ -197,6 +198,7 @@ async function renderFeed() {
   }
 
   applyFeedFilter();
+  autoReviewPosts();
 }
 
 // The 성인 category stays admin-only until there is a real
@@ -224,6 +226,59 @@ function updateAdultGate() {
   if (opt) opt.hidden = !visible;
 }
 
+// --- auto-review -----------------------------------------------------------
+// The classifier flags posts that do not look like in-game captures. A flag is
+// never a deletion: it puts the post in the admin's 삭제 대기 list. Once the
+// admin starts the trial, flagged posts are hidden from other users for three
+// days instead - still no deletion, so a wrong call costs nothing permanent.
+const AUTO_FLAG_MIN_CONF = 0.7;
+const CAPTURE_TARGET = 30; // examples per label before proposing the trial
+const TRIAL_DAYS = 3;
+const AUTO_REVIEW_BATCH = 20; // per page load, so opening the feed stays quick
+
+let autoModeration = {};
+
+function trialStartedMs() {
+  const t = autoModeration.trialStartedAt;
+  return t && t.toMillis ? t.toMillis() : 0;
+}
+
+function trialActive() {
+  const start = trialStartedMs();
+  return start > 0 && Date.now() - start < TRIAL_DAYS * 86400000;
+}
+
+async function autoReviewPosts() {
+  if (!isAdmin()) return;
+  const pending = allSlots.filter(
+    (s) =>
+      !s.autoChecked &&
+      s.verifiedCapture == null &&
+      (s.images || []).length &&
+      !String(s.id).startsWith('dummy-')
+  );
+  if (!pending.length) return;
+  for (const slot of pending.slice(0, AUTO_REVIEW_BATCH)) {
+    let verdict;
+    try {
+      verdict = await classifyCapture(slot.images[0]);
+    } catch (err) {
+      console.warn('자동 검토 실패:', slot.id, err);
+      continue;
+    }
+    if (!verdict) return; // not enough examples yet - stop, don't spin
+    const flagged = verdict.label === '외부' && verdict.confidence >= AUTO_FLAG_MIN_CONF;
+    try {
+      await DB.setAutoFlag(slot.id, flagged, verdict.confidence);
+      Object.assign(slot, { autoChecked: true, autoFlag: flagged });
+    } catch (err) {
+      console.warn('자동 검토 저장 실패:', slot.id, err);
+    }
+  }
+  updateReviewProgress();
+  applyFeedFilter();
+}
+
 function applyFeedFilter() {
   updateAdultGate();
   const q = feedSearchInput.value;
@@ -236,7 +291,9 @@ function applyFeedFilter() {
     const matchesCategory =
       !selectedCategory || (slot.category || '일반') === selectedCategory;
     const allowed = adultVisible() || (slot.category || '일반') !== ADULT_CATEGORY;
-    return matchesSearch && matchesChar && matchesCategory && allowed;
+    // During the trial a flagged post is hidden from everyone but the admin.
+    const notHidden = isAdmin() || !(trialActive() && slot.autoFlag);
+    return matchesSearch && matchesChar && matchesCategory && allowed && notHidden;
   });
 
   if (filtered.length === 0) {
@@ -282,11 +339,50 @@ function updateReviewProgress() {
     `학습 데이터 ${ruled.length}/${TRAINING_TARGET}건 · 미검토 ${real.length - ruled.length}건 · 캡처 확인 ${confirmed}건` +
     (ruled.length >= TRAINING_TARGET ? ' · 분류기 학습 가능' : '');
 
+  const waiting = real.filter((s) => s.autoFlag && s.verifiedCapture == null).length;
+  if (waiting) reviewProgress.textContent += ` · 자동 삭제 대기 ${waiting}건`;
+  if (trialActive()) {
+    const left = Math.ceil((trialStartedMs() + TRIAL_DAYS * 86400000 - Date.now()) / 86400000);
+    reviewProgress.textContent += ` · 자동 숨김 테스트 진행 중 (${left}일 남음)`;
+  }
+
   DB.countUsers()
     .then((n) => {
       reviewProgress.textContent += ` · 가입 이용자 ${n}명`;
     })
     .catch(() => {});
+
+  maybeOfferTrial();
+}
+
+// Notifies the admin once the labelled set is big enough, and only then.
+async function maybeOfferTrial() {
+  if (!isAdmin() || trialStartedMs() > 0) return;
+  let counts;
+  try {
+    counts = await captureSampleCounts();
+  } catch {
+    return;
+  }
+  if (Object.values(counts).some((n) => n < CAPTURE_TARGET)) return;
+  if (document.getElementById('trial-offer')) return;
+
+  const box = document.createElement('div');
+  box.id = 'trial-offer';
+  box.className = 'trial-offer';
+  box.innerHTML = `
+    <span>학습 예시가 충분히 모였습니다 (인게임 ${counts['인게임']}장 · 외부 ${counts['외부']}장).
+    ${TRIAL_DAYS}일간 자동으로 <b>숨기기</b> 테스트를 시작할까요? 삭제는 하지 않습니다.</span>
+    <button class="pill accent" id="trial-start">테스트 시작</button>`;
+  reviewProgress.insertAdjacentElement('afterend', box);
+  document.getElementById('trial-start').addEventListener('click', async () => {
+    if (!confirm(`${TRIAL_DAYS}일간 자동 숨김 테스트를 시작할까요?`)) return;
+    await DB.startAutoModerationTrial();
+    autoModeration = await DB.getAutoModeration();
+    box.remove();
+    updateReviewProgress();
+    applyFeedFilter();
+  });
 }
 
 function updateFeedHeading() {
