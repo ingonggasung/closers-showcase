@@ -28,6 +28,12 @@ const DB = {
   // both here and in the Firestore rules.
   async addTrainingSample({ url, kind, label, note }) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const dup = await firestore
+      .collection('trainingSamples')
+      .where('url', '==', url)
+      .limit(1)
+      .get();
+    if (!dup.empty) throw new Error('이미 등록된 링크입니다.');
     const ref = await firestore.collection('trainingSamples').add({
       url,
       kind,
