@@ -773,11 +773,11 @@ select:hover { border-color: var(--accent); }
    placement once the window is squarer than 3:5. */
 @media (max-width: 720px) and (min-aspect-ratio: 3/5) {
   .landing-art.eunha {
-    top: -6vw;
+    top: -1vw;
   }
   .landing-art.mirae {
-    bottom: calc(-53.9vh + 7vw);
-    right: calc(-48.3 * var(--u) - 2vw);
+    bottom: calc(-53.9vh + 13vw);
+    right: calc(-48.3 * var(--u) - 4vw);
   }
 }
 
