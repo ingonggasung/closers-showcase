@@ -223,13 +223,25 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
   // img height (not recomputing it from naturalWidth/naturalHeight - that
   // math is what caused the previous version of this to size things wrong)
   // and pinning the wrapper to exactly that closes the gap.
+  function frameHeight(i) {
+    const frame = carousel.children[i];
+    const img = frame && frame.querySelector('img');
+    if (!img || !img.complete || !img.naturalHeight) return null;
+    return img.getBoundingClientRect().height;
+  }
+
+  // Interpolated between the two frames either side of the scroll position,
+  // so the card grows and shrinks continuously as you drag rather than
+  // snapping once a frame passes the halfway mark.
   function syncCarouselHeight() {
     const width = carousel.clientWidth || 1;
-    const idx = Math.round(carousel.scrollLeft / width);
-    const img = carousel.children[idx] && carousel.children[idx].querySelector('img');
-    if (img && img.complete && img.naturalHeight) {
-      carouselWrap.style.height = `${img.getBoundingClientRect().height}px`;
-    }
+    const pos = carousel.scrollLeft / width;
+    const i = Math.floor(pos);
+    const t = pos - i;
+    const a = frameHeight(i);
+    if (a == null) return;
+    const b = t > 0 ? frameHeight(i + 1) : null;
+    carouselWrap.style.height = `${b == null ? a : a + (b - a) * t}px`;
   }
 
   if (!slot.images || slot.images.length === 0) {
