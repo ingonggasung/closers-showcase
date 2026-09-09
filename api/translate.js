@@ -6,6 +6,11 @@
 // the default backend is MyMemory - free, no key, no billing account. If
 // GOOGLE_TRANSLATE_KEY is set it is used instead, since it is better; without
 // it nothing breaks.
+//
+// Japanese and Chinese are translated from the English rather than straight
+// from the Korean. English is the language the admin actually curates, so
+// every proper noun fixed there - character names, costume names - carries
+// through to the other two instead of being re-invented per language.
 
 const admin = require('firebase-admin');
 const crypto = require('crypto');
@@ -29,21 +34,40 @@ function db() {
 const cacheId = (text, target) =>
   target + '_' + crypto.createHash('sha1').update(text).digest('hex').slice(0, 32);
 
-async function readCache(ids) {
-  if (!ids.length) return {};
+// Google and MyMemory both want the regional tag for Chinese.
+const engineCode = (lang) => (lang === 'zh' ? 'zh-CN' : lang);
+
+async function readCache(texts, target) {
   const out = {};
-  // getAll takes refs one by one; chunk to stay well inside limits.
+  const ids = texts.map((t) => cacheId(t, target));
   for (let i = 0; i < ids.length; i += 100) {
     const refs = ids.slice(i, i + 100).map((id) => db().collection('translations').doc(id));
     const docs = await db().getAll(...refs);
-    docs.forEach((d) => {
-      if (d.exists) out[d.id] = d.data().text;
+    docs.forEach((d, j) => {
+      if (d.exists) out[texts[i + j]] = d.data().text;
     });
   }
   return out;
 }
 
-async function translateGoogle(texts, target) {
+async function writeCache(map, target) {
+  const keys = Object.keys(map);
+  if (!keys.length) return;
+  const batch = db().batch();
+  keys.forEach((source) => {
+    batch.set(db().collection('translations').doc(cacheId(source, target)), {
+      source,
+      target,
+      text: map[source],
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+  await batch.commit();
+}
+
+// --- engines ----------------------------------------------------------------
+
+async function translateGoogle(texts, source, target) {
   const key = process.env.GOOGLE_TRANSLATE_KEY;
   const res = await fetch(
     'https://translation.googleapis.com/language/translate/v2?key=' + encodeURIComponent(key),
@@ -52,8 +76,8 @@ async function translateGoogle(texts, target) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         q: texts,
-        source: 'ko',
-        target: target === 'zh' ? 'zh-CN' : target,
+        source: engineCode(source),
+        target: engineCode(target),
         format: 'text',
       }),
     }
@@ -68,12 +92,12 @@ async function translateGoogle(texts, target) {
 // the daily allowance and is the site's own public one.
 const MM_CONTACT = process.env.TRANSLATE_CONTACT || 'nasac0311@gmail.com';
 
-async function translateOneMyMemory(text, target) {
+async function translateOneMyMemory(text, source, target) {
   const url =
     'https://api.mymemory.translated.net/get?q=' +
     encodeURIComponent(text) +
     '&langpair=' +
-    encodeURIComponent('ko|' + (target === 'zh' ? 'zh-CN' : target)) +
+    encodeURIComponent(engineCode(source) + '|' + engineCode(target)) +
     '&de=' +
     encodeURIComponent(MM_CONTACT);
   const res = await fetch(url);
@@ -94,6 +118,34 @@ function decodeEntities(t) {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>');
+}
+
+// Runs the engine over {original, sent} pairs and returns a map keyed by the
+// original phrase. A single failure drops that phrase, not the whole request.
+async function runEngine(pairs, source, target) {
+  if (!pairs.length) return {};
+  if (process.env.GOOGLE_TRANSLATE_KEY) {
+    const list = await translateGoogle(
+      pairs.map((p) => p.sent),
+      source,
+      target
+    );
+    return Object.fromEntries(pairs.map((p, i) => [p.original, list[i]]));
+  }
+  const out = {};
+  const queue = [...pairs];
+  const workers = Array.from({ length: 8 }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      try {
+        out[item.original] = await translateOneMyMemory(item.sent, source, target);
+      } catch (err) {
+        console.warn('translate skipped:', item.original, err.message);
+      }
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 // --- glossary ---------------------------------------------------------------
@@ -125,9 +177,6 @@ async function getGlossary(target) {
   return terms;
 }
 
-// Substitutes known terms in place. Returns the text unchanged when nothing
-// matches, and never touches a phrase that is entirely one known term - that
-// case is already answered by the cache.
 function applyGlossary(text, terms) {
   let out = text;
   let hit = false;
@@ -138,34 +187,35 @@ function applyGlossary(text, terms) {
       hit = true;
     }
   }
-  return { text: hit ? out.replace(/\s+/g, ' ').trim() : text, hit };
+  return hit ? out.replace(/\s+/g, ' ').trim() : text;
 }
 
-// Returns a map of the ones that worked; a failure drops that phrase rather
-// than the whole request.
-async function translateBatch(texts, target) {
-  const terms = await getGlossary(target).catch(() => []);
-  // The engine sees the prepared text; the result is stored under the original.
-  const prepared = texts.map((t) => ({ original: t, sent: applyGlossary(t, terms).text }));
+// --- pipeline ---------------------------------------------------------------
 
-  if (process.env.GOOGLE_TRANSLATE_KEY) {
-    const list = await translateGoogle(prepared.map((p) => p.sent), target);
-    return Object.fromEntries(prepared.map((p, i) => [p.original, list[i]]));
+// Korean -> English, the curated hop. Results are cached under 'en' even when
+// the caller asked for another language, so the dictionary fills either way.
+async function toEnglish(texts) {
+  const cached = await readCache(texts, 'en');
+  const missing = texts.filter((t) => cached[t] === undefined);
+  if (missing.length) {
+    const terms = await getGlossary('en').catch(() => []);
+    const pairs = missing.map((t) => ({ original: t, sent: applyGlossary(t, terms) }));
+    const fresh = await runEngine(pairs, 'ko', 'en');
+    await writeCache(fresh, 'en');
+    Object.assign(cached, fresh);
   }
-  const out = {};
-  const queue = [...prepared];
-  const workers = Array.from({ length: 8 }, async () => {
-    while (queue.length) {
-      const item = queue.shift();
-      try {
-        out[item.original] = await translateOneMyMemory(item.sent, target);
-      } catch (err) {
-        console.warn('translate skipped:', item.original, err.message);
-      }
-    }
-  });
-  await Promise.all(workers);
-  return out;
+  return cached;
+}
+
+async function translateInto(texts, target) {
+  if (target === 'en') return toEnglish(texts);
+
+  // An entry the admin wrote directly in this language already came back from
+  // the cache before this ran, so whatever is left has no hand-written form
+  // and goes through the curated English.
+  const english = await toEnglish(texts);
+  const pairs = texts.filter((t) => english[t]).map((t) => ({ original: t, sent: english[t] }));
+  return runEngine(pairs, 'en', target);
 }
 
 module.exports = async (req, res) => {
@@ -183,32 +233,13 @@ module.exports = async (req, res) => {
       .slice(0, MAX_TEXTS);
     if (!texts.length) return res.json({ translations: {} });
 
-    const ids = texts.map((t) => cacheId(t, target));
-    const cached = await readCache(ids);
-
-    const out = {};
-    const missing = [];
-    texts.forEach((t, i) => {
-      if (cached[ids[i]] !== undefined) out[t] = cached[ids[i]];
-      else missing.push(t);
-    });
+    const out = await readCache(texts, target);
+    const missing = texts.filter((t) => out[t] === undefined);
 
     if (missing.length) {
-      const fresh = await translateBatch(missing, target);
-      const done = Object.keys(fresh);
-      if (done.length) {
-        const batch = db().batch();
-        done.forEach((t) => {
-          out[t] = fresh[t];
-          batch.set(db().collection('translations').doc(cacheId(t, target)), {
-            source: t,
-            target,
-            text: fresh[t],
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        });
-        await batch.commit();
-      }
+      const fresh = await translateInto(missing, target);
+      await writeCache(fresh, target);
+      Object.assign(out, fresh);
     }
 
     res.json({ translations: out });
