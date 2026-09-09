@@ -749,7 +749,7 @@ select:hover { border-color: var(--accent); }
   .landing-art.right {
     /* In vh, not vw: how far down she sits has to follow the screen's height,
        otherwise a short-and-wide phone window drops her off the bottom. */
-    bottom: -53.9vh;
+    bottom: calc(-53.9vh + 4vw);
   }
 }
 
