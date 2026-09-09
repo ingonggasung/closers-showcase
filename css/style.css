@@ -767,6 +767,7 @@ select:hover { border-color: var(--accent); }
   .landing-art.eunha {
     height: 112.2vh;
     max-width: 56.1vw;
+    bottom: -11.5vw;
   }
   .landing-art.mirae {
     height: 138.6vh;
