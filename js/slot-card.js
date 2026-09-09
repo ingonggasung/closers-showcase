@@ -390,9 +390,10 @@ function buildSlotCard(slot, { draggable = false, showCharacterTag = false, onDe
 
   const tag = document.createElement('div');
   tag.className = 'slot-owner-tag';
-  tag.textContent = showCharacterTag
-    ? `${slot.characterName || '캐릭터'} · by ${slot.ownerName || '익명'}`
-    : `by ${slot.ownerName || '익명'}`;
+  const who = `<span data-no-i18n>${escapeHtml(slot.ownerName || '익명')}</span>`;
+  tag.innerHTML = showCharacterTag
+    ? `${escapeHtml(slot.characterName || '캐릭터')} · by ${who}`
+    : `by ${who}`;
   card.appendChild(tag);
 
   card.addEventListener('click', () => {

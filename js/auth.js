@@ -114,7 +114,7 @@ function mountAuthBar(container) {
           ${isAdmin() ? '<button class="pill" id="auth-dict-btn">번역 사전</button>' : ''}
           <button class="auth-profile-btn" id="auth-profile-btn">
             ${photo ? `<img src="${photo}" class="auth-avatar" alt="">` : ''}
-            <span class="auth-name">${escapeHtml(displayName(user))}</span>
+            <span class="auth-name" data-no-i18n>${escapeHtml(displayName(user))}</span>
           </button>
           <button class="pill" id="auth-signout-btn">로그아웃</button>
         </div>

@@ -143,7 +143,8 @@ function renderContent() {
   const owner = isOwner(currentSlot);
   const editing = owner && editMode;
   document.title = `${slotDisplayTitle(currentSlot)} - 클로저스 캐릭터 자랑`;
-  ownerLine.textContent = `게시자: ${currentSlot.ownerName || '익명'}`;
+  ownerLine.innerHTML =
+    `게시자: <span data-no-i18n>${escapeHtml(currentSlot.ownerName || '익명')}</span>`;
 
   titleArea.innerHTML = '';
   const titleRow = document.createElement('div');
