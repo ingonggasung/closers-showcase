@@ -773,6 +773,7 @@ select:hover { border-color: var(--accent); }
     height: 138.6vh;
     max-width: 69.3vw;
     bottom: -12.2vw;
+    right: -20.6vw;
   }
 }
 
