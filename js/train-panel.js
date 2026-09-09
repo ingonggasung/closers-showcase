@@ -167,9 +167,17 @@ async function runTest(src) {
   try {
     await ensureModel(status);
     const samples = await ensureKnn(status);
-    const labels = Object.keys(knn.getClassExampleCount());
+    const counts = knn.getClassExampleCount();
+    const labels = Object.keys(counts);
     if (labels.length < 2) {
-      status('서로 다른 분류의 예시를 최소 두 종류 등록해야 판정할 수 있습니다.');
+      const have = labels.length
+        ? labels.map((l) => `${l} ${counts[l]}장`).join(', ')
+        : '0장';
+      status(
+        `판정하려면 서로 다른 분류의 이미지 예시가 필요합니다. 현재 사용 가능: ${have}. ` +
+          '링크로 등록한 예시는 외부 사이트의 보안정책(CORS) 때문에 읽을 수 없어 제외됩니다 - ' +
+          '이미지 파일로 올려주세요.'
+      );
       return;
     }
     status('분류 중...');
