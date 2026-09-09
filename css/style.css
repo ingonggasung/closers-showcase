@@ -1,3 +1,27 @@
+/* ── style.css ────────────────────────────────────────────────────────────────
+   사이트 전체 스타일. 파일 하나에 몰아넣었고, 아래 구역 표시를 따라 읽으면
+   됩니다. Ctrl+F 로 "── " 를 찾으면 구역만 훑을 수 있습니다.
+
+   구역 순서
+     기본값·변수      색과 여백의 기준값 (:root 의 --변수들)
+     헤더             상단 제목줄
+     계정             우상단 로그인·프로필
+     등록 버튼·창     우하단 + 버튼과 코스튬 등록 창
+     코스튬 표시      게시글 상세의 부위 목록
+     신고 목록        관리자 화면
+     캐릭터 격자      필터의 아이콘 목록
+     첫 화면          index.html 의 캐릭터 두 명과 배경
+     분류 탭          전체 / 일반 / 수영복 / 성인
+     PC 좌측 필터     넓은 화면에서 필터를 왼쪽 여백으로 옮기는 규칙
+     게시글 격자      목록의 카드와 이미지 캐러셀
+     게시글 상세      slot.html
+     우클릭 메뉴
+     공용 창(모달)
+     반응형           태블릿·모바일 보정
+
+   색을 바꾸려면 맨 위 :root 의 변수만 고치면 전체가 따라옵니다.
+   ────────────────────────────────────────────────────────────────────────── */
+
 :root {
   --bg: #17181c;
   --panel: #1f2025;
@@ -81,7 +105,7 @@ button {
   padding: 28px 20px 60px;
 }
 
-/* ---------- Header ---------- */
+/* ── 헤더 (상단 제목줄) ─────────────────────────────────────────── */
 .sticky-header {
   position: sticky;
   top: 0;
@@ -272,7 +296,7 @@ select:hover { border-color: var(--accent); }
   option::checkmark { display: none; }
 }
 
-/* ---------- Auth bar ---------- */
+/* ── 계정 (우상단 로그인·프로필) ─────────────────────────────────────────── */
 #auth-bar { display: flex; align-items: center; }
 .auth-user {
   display: flex;
@@ -312,7 +336,7 @@ select:hover { border-color: var(--accent); }
   word-break: break-word;
 }
 
-/* ---------- Floating add-post button + modal ---------- */
+/* ── 등록 버튼 + 코스튬 등록 창 ─────────────────────────────────────────── */
 .fab {
   position: fixed;
   right: 24px;
@@ -440,7 +464,7 @@ select:hover { border-color: var(--accent); }
   font-size: 13px;
 }
 
-/* ---------- Costume parts display (slot detail) ---------- */
+/* ── 코스튬 부위 표시 (게시글 상세) ─────────────────────────────────────────── */
 .parts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -468,7 +492,7 @@ select:hover { border-color: var(--accent); }
   line-height: 1.6;
 }
 
-/* ---------- Report list (admin) ---------- */
+/* ── 신고 목록 (관리자) ─────────────────────────────────────────── */
 .report-item {
   display: flex;
   align-items: center;
@@ -557,7 +581,7 @@ select:hover { border-color: var(--accent); }
 }
 .char-title h1 { font-size: 20px; margin: 0; }
 
-/* ---------- Character grid (index) ---------- */
+/* ── 캐릭터 격자 (필터) ─────────────────────────────────────────── */
 .char-grid {
   display: grid;
   /* minmax(0, 1fr), not 1fr: a plain fr has an auto minimum, so a long
@@ -665,7 +689,7 @@ select:hover { border-color: var(--accent); }
   color: var(--accent);
 }
 
-/* ---------- Landing page (index.html) ---------- */
+/* ── 첫 화면 (index.html) ─────────────────────────────────────────── */
 .landing {
   position: fixed;
   inset: 0;
@@ -890,7 +914,7 @@ select:hover { border-color: var(--accent); }
 }
 .review-progress[hidden] { display: none; }
 
-/* ---------- Category tabs ---------- */
+/* ── 분류 탭 ─────────────────────────────────────────── */
 .tab-bar {
   display: flex;
   gap: 8px;
@@ -980,7 +1004,7 @@ select:hover { border-color: var(--accent); }
 
 .sidebar-brand { display: none; }
 
-/* ---------- Desktop: filter moved into left-side gutter ---------- */
+/* ── PC: 필터를 왼쪽 여백으로 ─────────────────────────────────────────── */
 @media (min-width: 1300px) {
   /* Sidebar is now a fixed width instead of "whatever's left of a centered
      900px column" - .page below expands to fill everything after it, so
@@ -1075,7 +1099,7 @@ select:hover { border-color: var(--accent); }
   }
 }
 
-/* ---------- Slot grid (character page) ---------- */
+/* ── 게시글 격자 + 이미지 캐러셀 ─────────────────────────────────────────── */
 /* Masonry: items are pre-split into exactly N column elements in JS
    (renderMasonryGrid) rather than relying on CSS column-count, which
    silently collapses to fewer columns when content is sparse/uneven. */
@@ -1264,7 +1288,7 @@ select:hover { border-color: var(--accent); }
 .slot-card.add-slot:hover { border-color: var(--accent); color: var(--accent); }
 .slot-card.add-slot .plus { font-size: 28px; }
 
-/* ---------- Slot detail page ---------- */
+/* ── 게시글 상세 페이지 ─────────────────────────────────────────── */
 .image-row {
   display: flex;
   align-items: center;
@@ -1405,7 +1429,7 @@ select:hover { border-color: var(--accent); }
 .slot-title-row .slot-title-input { flex: 1; }
 .slot-title-row .pill { flex-shrink: 0; }
 
-/* ---------- Context menu ---------- */
+/* ── 우클릭 메뉴 ─────────────────────────────────────────── */
 .context-menu {
   position: fixed;
   z-index: 100;
@@ -1431,7 +1455,7 @@ select:hover { border-color: var(--accent); }
 .context-menu button:hover { background: var(--panel-2); }
 .context-menu button.danger { color: #ff5c5c; }
 
-/* ---------- Modal ---------- */
+/* ── 공용 창 (모달) ─────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1546,7 +1570,7 @@ select:hover { border-color: var(--accent); }
   margin-top: 18px;
 }
 
-/* ---------- Responsive (tablet / mobile) ---------- */
+/* ── 반응형 (태블릿 / 모바일) ─────────────────────────────────────────── */
 @media (max-width: 720px) {
   .char-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
