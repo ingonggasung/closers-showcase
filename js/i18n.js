@@ -178,15 +178,34 @@ let currentLang = 'ko';
 const AUTO_ENDPOINT = 'https://closers-showcase.vercel.app/api/translate';
 const HANGUL = /[가-힣]/;
 
-// In-memory only, deliberately: a translation the admin corrects has to take
-// effect for everyone on their next page load, so nothing is kept across
-// visits. The Firestore-side cache already means this costs one request.
+// Kept across visits, but only briefly: a permanent copy would keep serving
+// a translation the admin has since corrected, and no copy at all makes every
+// page load wait on the network.
+const AUTO_CACHE_KEY = 'closers-autotr';
+const AUTO_CACHE_TTL = 10 * 60 * 1000;
+
 let autoCache = {};
 let autoPending = new Set();
 let autoTimer = null;
 let autoUnavailable = false;
 
 const autoKey = (text, lang) => lang + ' ' + text;
+
+function loadAutoCache() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || '{}');
+    if (Date.now() - (raw.savedAt || 0) < AUTO_CACHE_TTL) autoCache = raw.entries || {};
+  } catch {}
+}
+
+function saveAutoCache() {
+  try {
+    localStorage.setItem(
+      AUTO_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), entries: autoCache })
+    );
+  } catch {}
+}
 
 // Nodes waiting on a phrase, so the answer can be dropped straight in.
 const autoNodes = new Map();
@@ -202,7 +221,7 @@ function queueAuto(node, text, lang) {
   autoNodes.get(key).push(node);
   autoPending.add(text);
   clearTimeout(autoTimer);
-  autoTimer = setTimeout(flushAuto, 200); // one request per burst of rendering
+  autoTimer = setTimeout(flushAuto, 60); // one request per burst of rendering
 }
 
 async function flushAuto() {
@@ -225,6 +244,7 @@ async function flushAuto() {
       });
       autoNodes.delete(key);
     });
+    saveAutoCache();
   } catch {
     autoUnavailable = true;
   }
@@ -361,6 +381,7 @@ function watchForNewContent() {
 
 (function initI18n() {
   currentLang = detectLang();
+  loadAutoCache();
   const start = () => {
     mountLanguagePicker();
     if (currentLang !== 'ko') setLanguage(currentLang);

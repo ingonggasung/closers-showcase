@@ -101,7 +101,7 @@ async function translateBatch(texts, target) {
   }
   const out = {};
   const queue = [...texts];
-  const workers = Array.from({ length: 4 }, async () => {
+  const workers = Array.from({ length: 8 }, async () => {
     while (queue.length) {
       const text = queue.shift();
       try {

@@ -1,5 +1,7 @@
 {
+  "regions": ["icn1"],
   "functions": {
-    "api/review.js": { "maxDuration": 60, "memory": 1024 }
+    "api/review.js": { "maxDuration": 60, "memory": 1024 },
+    "api/translate.js": { "maxDuration": 30, "memory": 512 }
   }
 }
