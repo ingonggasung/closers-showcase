@@ -26,6 +26,7 @@ async function translationDocId(text, target) {
   return target + '_' + hex.slice(0, 32);
 }
 
+// 창의 HTML 뼈대.
 function dictMarkup() {
   return `
     <div class="modal-box modal-box-wide" data-no-i18n>
@@ -66,6 +67,7 @@ function dictMarkup() {
 
 let dictRows = [];
 
+// 번역 목록. 오른쪽 칸에서 바로 고치면 저장됩니다.
 function renderDictRows() {
   const list = document.getElementById('dict-list');
   const filter = document.getElementById('dict-filter').value.trim();
@@ -127,6 +129,7 @@ function renderDictRows() {
   });
 }
 
+// 선택한 언어의 번역을 불러옵니다.
 async function loadDict() {
   const list = document.getElementById('dict-list');
   try {
@@ -137,6 +140,7 @@ async function loadDict() {
   }
 }
 
+// 창을 만들고 버튼을 연결합니다.
 function buildDictPanel() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -182,6 +186,7 @@ function buildDictPanel() {
   return overlay;
 }
 
+// 창 열기.
 function openDictPanel() {
   if (!dictOverlay) dictOverlay = buildDictPanel();
   dictOverlay.hidden = false;

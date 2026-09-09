@@ -33,6 +33,7 @@
 // and a server - neither of which this static site can satisfy.
 const SLOT_CATEGORIES = ['일반', '수영복', '성인'];
 
+// Firestore 문서를 { id, ...필드 } 형태의 평범한 객체로 바꿔줍니다.
 function docToObj(doc) {
   return { id: doc.id, ...doc.data() };
 }
@@ -54,6 +55,7 @@ const DB = {
     return !byUrl.empty;
   },
 
+  // 학습 예시 추가. label = 탭 분류, capture = 인게임/외부.
   async addTrainingSample({ url, kind, label, capture, note, hash }) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     if (await DB.isDuplicateTrainingSample({ url, hash })) {
@@ -74,6 +76,7 @@ const DB = {
     return ref.id;
   },
 
+  // 학습 예시 전체를 최신순으로.
   async getTrainingSamples() {
     const snap = await firestore
       .collection('trainingSamples')
@@ -89,6 +92,7 @@ const DB = {
     await firestore.collection('trainingSamples').doc(id).update({ embedding });
   },
 
+  // 예시의 분류나 인게임 여부를 고칩니다 (목록에서 바로 수정할 때).
   async updateTrainingSample(id, fields) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('trainingSamples').doc(id).update(fields);
@@ -117,6 +121,7 @@ const DB = {
     return fixed;
   },
 
+  // 예시 삭제.
   async deleteTrainingSample(id) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('trainingSamples').doc(id).delete();
@@ -168,11 +173,13 @@ const DB = {
       .sort((a, b) => (a.source || '').localeCompare(b.source || '', 'ko'));
   },
 
+  // 번역 하나를 저장/수정. locked = 관리자가 직접 고친 값.
   async setTranslation(id, fields) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('translations').doc(id).set(fields, { merge: true });
   },
 
+  // 번역 삭제. 다음에 그 문구가 나오면 다시 기계번역됩니다.
   async deleteTranslation(id) {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('translations').doc(id).delete();
@@ -188,6 +195,7 @@ const DB = {
       .sort((a, b) => (b.autoCheckedAt?.seconds || 0) - (a.autoCheckedAt?.seconds || 0));
   },
 
+  // 자동 삭제 보관함 목록.
   async getAutoDeleted() {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     const snap = await firestore.collection('autoDeleted').get();
@@ -229,6 +237,7 @@ const DB = {
     return doc.exists ? doc.data() : {};
   },
 
+  // 3일 자동 숨김 테스트 시작.
   async startAutoModerationTrial() {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore
@@ -237,6 +246,7 @@ const DB = {
       .set({ trialStartedAt: firebase.firestore.FieldValue.serverTimestamp() });
   },
 
+  // 자동 삭제 켜기.
   async enableAutoDelete() {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore.collection('config').doc('autoModeration').set(
@@ -248,6 +258,7 @@ const DB = {
     );
   },
 
+  // 자동 삭제 끄기.
   async disableAutoDelete() {
     if (!isAdmin()) throw new Error('관리자만 가능합니다.');
     await firestore
@@ -274,6 +285,7 @@ const DB = {
     await firestore.collection('slots').doc(slot.id).delete();
   },
 
+  // 캐릭터 추가 (관리자).
   async addCharacter({ name, icon }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const existing = await firestore.collection('characters').get();
@@ -288,11 +300,13 @@ const DB = {
     return ref.id;
   },
 
+  // 캐릭터 목록을 정해진 순서대로.
   async getCharacters() {
     const snap = await firestore.collection('characters').get();
     return snap.docs.map(docToObj).sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 
+  // 캐릭터 순서 저장 (드래그로 바꾼 뒤).
   async reorderCharacters(orderedIds) {
     const batch = firestore.batch();
     orderedIds.forEach((id, i) => {
@@ -301,11 +315,13 @@ const DB = {
     await batch.commit();
   },
 
+  // 캐릭터 한 명.
   async getCharacter(id) {
     const doc = await firestore.collection('characters').doc(id).get();
     return doc.exists ? docToObj(doc) : null;
   },
 
+  // 캐릭터와 그 캐릭터의 게시글을 함께 삭제.
   async deleteCharacter(id) {
     const slotsSnap = await firestore.collection('slots').where('characterId', '==', id).get();
     const batch = firestore.batch();
@@ -314,6 +330,7 @@ const DB = {
     await batch.commit();
   },
 
+  // 게시글 등록. verifiedCapture 는 반드시 null 로 시작합니다(관리자만 정할 수 있는 값).
   async addSlot({ characterId, title, images, parts, notes, category, claimedGameCapture }) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const [existing, character] = await Promise.all([
@@ -349,11 +366,13 @@ const DB = {
     });
   },
 
+  // 캐릭터별 게시글.
   async getSlotsByCharacter(characterId) {
     const snap = await firestore.collection('slots').where('characterId', '==', characterId).get();
     return snap.docs.map(docToObj).sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 
+  // 전체 게시글을 최신순으로.
   async getAllSlots() {
     const snap = await firestore.collection('slots').orderBy('createdAt', 'desc').get();
     return snap.docs.map(docToObj);
@@ -368,19 +387,23 @@ const DB = {
     return ts ? ts.seconds : null;
   },
 
+  // 게시글 하나.
   async getSlot(id) {
     const doc = await firestore.collection('slots').doc(id).get();
     return doc.exists ? docToObj(doc) : null;
   },
 
+  // 게시글 수정.
   async updateSlot(id, changes) {
     await firestore.collection('slots').doc(id).update(changes);
   },
 
+  // 게시글 삭제.
   async deleteSlot(id) {
     await firestore.collection('slots').doc(id).delete();
   },
 
+  // 게시글 순서 저장.
   async reorderSlots(orderedIds) {
     const batch = firestore.batch();
     orderedIds.forEach((id, i) => {
@@ -389,12 +412,14 @@ const DB = {
     await batch.commit();
   },
 
+  // 이 게시글을 내가 스크랩했는지.
   async isScrapped(slotId) {
     if (!currentUser) return false;
     const doc = await firestore.collection('scraps').doc(`${currentUser.uid}_${slotId}`).get();
     return doc.exists;
   },
 
+  // 스크랩 추가. 문서 번호를 "내아이디_게시글아이디"로 만들어 중복을 막습니다.
   async addScrap(slotId) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore
@@ -407,11 +432,13 @@ const DB = {
       });
   },
 
+  // 스크랩 취소.
   async removeScrap(slotId) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore.collection('scraps').doc(`${currentUser.uid}_${slotId}`).delete();
   },
 
+  // 내가 스크랩한 게시글들.
   async getScrappedSlots() {
     if (!currentUser) return [];
     const scrapsSnap = await firestore
@@ -434,6 +461,7 @@ const DB = {
     return results;
   },
 
+  // 내가 쓴 게시글들.
   async getMySlots() {
     if (!currentUser) return [];
     const snap = await firestore.collection('slots').where('ownerId', '==', currentUser.uid).get();
@@ -444,6 +472,7 @@ const DB = {
     });
   },
 
+  // 신고 접수.
   async addReport(slotId, reason) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore.collection('reports').add({
@@ -455,15 +484,18 @@ const DB = {
     });
   },
 
+  // 신고 목록 (관리자).
   async getReports() {
     const snap = await firestore.collection('reports').orderBy('createdAt', 'desc').get();
     return snap.docs.map(docToObj);
   },
 
+  // 신고 기록 삭제.
   async deleteReport(id) {
     await firestore.collection('reports').doc(id).delete();
   },
 
+  // 이용자 프로필(닉네임·사진).
   async getUserProfile(uid) {
     const doc = await firestore.collection('users').doc(uid).get();
     return doc.exists ? doc.data() : null;
@@ -479,11 +511,13 @@ const DB = {
       .set({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   },
 
+  // 가입 이용자 수.
   async countUsers() {
     const snap = await firestore.collection('users').get();
     return snap.size;
   },
 
+  // 프로필 사진 변경.
   async setUserPhoto(photoURL) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore
@@ -495,6 +529,7 @@ const DB = {
       );
   },
 
+  // 닉네임 변경.
   async setNickname(nickname) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     await firestore
@@ -540,6 +575,7 @@ const DB = {
   },
 };
 
+// 파일을 미리보기용 data URL 로 읽습니다.
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -17,6 +17,7 @@
 
 let trainOverlay = null;
 
+// 창의 HTML 뼈대.
 function trainPanelMarkup() {
   return `
     <div class="modal-box modal-box-wide">
@@ -79,6 +80,7 @@ function trainPanelMarkup() {
   `;
 }
 
+// 등록된 예시 목록. 각 줄에서 분류와 인게임 여부를 바로 고칠 수 있습니다.
 async function renderTrainList() {
   const list = document.getElementById('train-list');
   const count = document.getElementById('train-count');
@@ -174,6 +176,7 @@ function invalidateModels() {
   sampleIndex = null;
 }
 
+// 외부 스크립트를 필요할 때만 불러옵니다 (모델은 처음 쓸 때 받습니다).
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const el = document.createElement('script');
@@ -191,6 +194,7 @@ async function fileHash(file) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// 이미지를 읽어옵니다. 픽셀을 읽어야 하므로 crossOrigin 이 필요합니다.
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -201,6 +205,7 @@ function loadImage(src) {
   });
 }
 
+// MobileNet 모델을 한 번만 받아옵니다 (약 15MB, 이후 브라우저 캐시).
 async function ensureModel(status) {
   if (mobilenetModel) return;
   status('라이브러리 불러오는 중...');
@@ -216,6 +221,7 @@ async function ensureModel(status) {
 // does not look like anything in the reference set. No counter-examples are
 // needed - a picture far enough from every screenshot we know is the answer.
 
+// 벡터 길이를 1로 맞춥니다. 이래야 코사인 비교가 각도만 보게 됩니다.
 function unit(arr) {
   let n = 0;
   for (const v of arr) n += v * v;
@@ -223,12 +229,14 @@ function unit(arr) {
   return arr.map((v) => v / n);
 }
 
+// 두 벡터가 얼마나 같은 방향인지 (1에 가까울수록 닮음).
 function cosine(a, b) {
   let s = 0;
   for (let i = 0; i < a.length; i++) s += a[i] * b[i];
   return s;
 }
 
+// 이미지 한 장을 숫자 목록(특징 벡터)으로 바꿉니다.
 async function embed(url) {
   const img = await loadImage(url);
   const feat = mobilenetModel.infer(img, true);
@@ -308,6 +316,7 @@ async function classifyCapture(imageUrl) {
   return captureVerdict(await embed(imageUrl), idx);
 }
 
+// 유사도와 기준값을 비교해 인게임/외부를 정하고 확신도를 냅니다.
 function captureVerdict(vec, idx) {
   const best = nearest(vec, idx.items);
   const inGame = nearest(vec, idx.refs);
@@ -329,6 +338,7 @@ function captureVerdict(vec, idx) {
   };
 }
 
+// 탭 분류 판정 (가장 닮은 예시의 분류를 그대로).
 function categoryVerdict(vec, idx) {
   const pool = idx.items.filter((it) => CATEGORY_LABELS.includes(it.label));
   if (!pool.length) return null;
@@ -424,6 +434,7 @@ function renderVerdictBox(predCategory, predCapture) {
   );
 }
 
+// 이미지 한 장을 시험 판정하고 결과를 보여줍니다.
 async function runTest(src, file) {
   lastTest = { src, file: file || null };
   const box = document.getElementById('test-result');
@@ -487,6 +498,7 @@ async function runTest(src, file) {
   }
 }
 
+// 창을 만들고 버튼·드래그·붙여넣기를 연결합니다.
 function buildTrainPanel() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -648,6 +660,7 @@ function buildTrainPanel() {
   return overlay;
 }
 
+// 창 열기.
 function openTrainPanel() {
   if (!trainOverlay) trainOverlay = buildTrainPanel();
   trainOverlay.hidden = false;

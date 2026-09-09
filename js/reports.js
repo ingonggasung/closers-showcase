@@ -12,11 +12,13 @@ const reportList = document.getElementById('report-list');
 
 mountAuthBar(document.getElementById('auth-bar'));
 
+// 신고 시각 표시용.
 function formatDate(ts) {
   if (!ts || !ts.seconds) return '';
   return new Date(ts.seconds * 1000).toLocaleString('ko-KR');
 }
 
+// 신고 목록을 그리고 처리 버튼을 붙입니다.
 async function render() {
   if (!currentUser) {
     reportList.innerHTML = '<div class="empty-hint">로그인이 필요합니다.</div>';
@@ -140,6 +142,7 @@ async function render() {
   }
 }
 
+// 목록을 못 불러왔을 때의 안내.
 function showLoadError() {
   reportList.innerHTML =
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';

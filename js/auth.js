@@ -43,6 +43,7 @@ function onProfileChange(fn) {
   if (profileResolved) fn();
 }
 
+// users 문서에서 닉네임·사진을 읽어옵니다. 로그인 기록도 남깁니다.
 async function refreshUserProfile(uid) {
   profileResolved = false;
   currentUserProfile = uid ? await DB.getUserProfile(uid).catch(() => null) : null;
@@ -68,19 +69,23 @@ const authReady = new Promise((resolve) => {
   });
 });
 
+// 구글 로그인 창 띄우기.
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   return auth.signInWithPopup(provider);
 }
 
+// 로그아웃.
 function signOutUser() {
   return auth.signOut();
 }
 
+// 이 게시글이 내 것인가.
 function isOwner(record) {
   return !!currentUser && !!record && record.ownerId === currentUser.uid;
 }
 
+// 내가 관리자인가 (화면 표시용 판단).
 function isAdmin() {
   return !!currentUser && currentUser.email === ADMIN_EMAIL;
 }
@@ -102,6 +107,7 @@ function displayName(user) {
   );
 }
 
+// 프로필 사진 변경.
 async function changeProfilePhoto(file) {
   const url = await uploadImageToCloudinary(file);
   await DB.setUserPhoto(url);
@@ -109,6 +115,7 @@ async function changeProfilePhoto(file) {
   profileChangeListeners.forEach((fn) => fn());
 }
 
+// 닉네임 변경.
 async function changeNickname(nickname) {
   await DB.setNickname(nickname);
   currentUserProfile = { ...(currentUserProfile || {}), nickname };

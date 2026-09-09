@@ -29,6 +29,7 @@ function setupDragSuppression(container) {
   });
 }
 
+// 제목이 없으면 코스튬 요약으로 대신합니다.
 function slotDisplayTitle(slot) {
   return slot.title || slotSummary(slot);
 }
@@ -60,6 +61,7 @@ function slotMatchesQuery(slot, query, field) {
 // finished could leave the carousel stuck mid-transition between images.
 const scrollAnimationTokens = new WeakMap();
 
+// 좌우 화살표로 넘길 때의 부드러운 이동.
 function animateScrollTo(el, targetLeft, duration = 260) {
   const startLeft = el.scrollLeft;
   const delta = targetLeft - startLeft;

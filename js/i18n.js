@@ -201,6 +201,7 @@ let autoUnavailable = false;
 
 const autoKey = (text, lang) => lang + ' ' + text;
 
+// 브라우저에 잠깐 저장해둔 번역을 읽습니다 (2분). 그 뒤엔 버립니다.
 function loadAutoCache() {
   try {
     const raw = JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || '{}');
@@ -217,6 +218,7 @@ function clearTranslationCache() {
   } catch {}
 }
 
+// 방금 받은 번역을 브라우저에 잠깐 저장합니다.
 function saveAutoCache() {
   try {
     localStorage.setItem(
@@ -229,6 +231,7 @@ function saveAutoCache() {
 // Nodes waiting on a phrase, so the answer can be dropped straight in.
 const autoNodes = new Map();
 
+// 사전에 없는 한국어를 번역 대기열에 넣습니다.
 function queueAuto(node, text, lang) {
   const key = autoKey(text, lang);
   if (autoCache[key] !== undefined) {
@@ -243,6 +246,7 @@ function queueAuto(node, text, lang) {
   autoTimer = setTimeout(flushAuto, 60); // one request per burst of rendering
 }
 
+// 모인 문구를 한 번에 서버로 보내고, 받은 번역을 화면에 꽂습니다.
 async function flushAuto() {
   const texts = [...autoPending];
   autoPending = new Set();
@@ -269,6 +273,7 @@ async function flushAuto() {
   }
 }
 
+// 저장된 선택이 있으면 그것, 없으면 브라우저 언어를 따릅니다.
 function detectLang() {
   try {
     const saved = localStorage.getItem(I18N_KEY);
@@ -281,6 +286,7 @@ function detectLang() {
   return 'en';
 }
 
+// 사전에서 문장 하나를 찾습니다. 없으면 null.
 function translateOne(text, lang) {
   const entry = I18N[text.trim()];
   if (!entry) return null;
@@ -309,10 +315,12 @@ const ATTRS = ['placeholder', 'title', 'aria-label'];
 // language names, which stay in their own language), and the admin tooling.
 const SKIP = '[data-no-i18n], #lang-picker, #train-modal, #auto-banner, .context-menu';
 
+// 번역하면 안 되는 곳인가 (언어 선택기, 닉네임, 관리자 도구).
 function skipped(el) {
   return !!(el && el.closest && el.closest(SKIP));
 }
 
+// placeholder·title 같은 속성도 번역합니다.
 function applyToElement(el, lang) {
   if (skipped(el)) return;
   ATTRS.forEach((attr) => {
@@ -326,6 +334,7 @@ function applyToElement(el, lang) {
   });
 }
 
+// 화면 일부를 훑어 번역합니다. 제외 구역은 아예 들어가지 않습니다.
 function translateTree(root, lang) {
   if (root.nodeType === Node.TEXT_NODE) {
     if (root.nodeValue.trim() && !skipped(root.parentElement)) applyToNode(root, lang);
@@ -354,6 +363,7 @@ function translateTree(root, lang) {
     .forEach((el) => applyToElement(el, lang));
 }
 
+// 언어를 바꾸고 화면 전체를 다시 번역합니다.
 function setLanguage(lang) {
   currentLang = LANGS[lang] ? lang : 'ko';
   try {
@@ -363,6 +373,7 @@ function setLanguage(lang) {
   translateTree(document.body, currentLang);
 }
 
+// 언어 선택기를 만듭니다. 언어 이름은 각자 자기 언어로 둡니다.
 function mountLanguagePicker() {
   if (document.getElementById('lang-picker')) return;
   const sel = document.createElement('select');

@@ -6,6 +6,7 @@ const myPostsGrid = document.getElementById('my-posts-grid');
 
 mountAuthBar(document.getElementById('auth-bar'));
 
+// 내 게시글을 불러와 그립니다. 로그인 안 했으면 안내만 보여줍니다.
 async function render() {
   if (!currentUser) {
     myPostsGrid.innerHTML = '<div class="empty-hint">로그인하면 내가 올린 게시글을 볼 수 있어요.</div>';

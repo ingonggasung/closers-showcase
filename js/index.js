@@ -38,6 +38,7 @@ document.getElementById('global-fab').addEventListener('click', () => openPostMo
 
 const FILTER_MAX_HEIGHT = 2000; // generous cap; real content settles well under this
 
+// 캐릭터 필터를 펼치거나 접습니다 (좁은 화면에서 스크롤할 때 자동으로 접힘).
 function setFilterExpanded(expanded) {
   filterToggle.setAttribute('aria-expanded', String(expanded));
   if (expanded) {
@@ -102,10 +103,12 @@ enableDragReorder(grid, '[data-role="item"]', async () => {
   await DB.reorderCharacters(ids);
 });
 
+// 페이지 첫 진입: 캐릭터 목록과 게시글을 함께 불러옵니다.
 async function render() {
   await Promise.all([renderCharacters(), renderFeed()]);
 }
 
+// 캐릭터 아이콘 격자를 그립니다. 관리자에게는 추가·삭제·순서 변경이 붙습니다.
 async function renderCharacters() {
   const characters = await DB.getCharacters();
   grid.innerHTML = '';
@@ -179,6 +182,7 @@ let allSlots = [];
 // never fire for a real visitor even if this file ships as-is; remove once
 // the layout work is done.
 const LOCAL_DUMMY_COUNT = 20;
+// 로컬에서 열었을 때만 쓰는 더미 게시글. 배포본에는 영향이 없습니다.
 function withLocalDummies(slots) {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
   if (!isLocal || slots.length === 0) return slots;
@@ -191,6 +195,7 @@ function withLocalDummies(slots) {
   return [...dummies, ...slots];
 }
 
+// 게시글을 불러오고, 자동 조치 설정을 읽고, 화면을 그린 뒤 자동 검토를 겁니다.
 async function renderFeed() {
   allSlots = withLocalDummies(await DB.getAllSlots());
 
@@ -221,10 +226,12 @@ async function renderFeed() {
 // adult-verification flow, which needs a paid 본인확인기관 contract.
 // Flip adultVisible() to open it up. 수영복 is public.
 const ADULT_CATEGORY = '성인';
+// 성인 탭을 볼 수 있는가. 지금은 관리자만. 성인인증이 생기면 이 함수만 바꾸면 됩니다.
 function adultVisible() {
   return isAdmin();
 }
 
+// 성인 탭과 등록 시 성인 선택지를 보이거나 숨깁니다.
 function updateAdultGate() {
   const visible = adultVisible();
   const tab = categoryTabs.querySelector(`.tab[data-category="${ADULT_CATEGORY}"]`);
@@ -256,16 +263,19 @@ const AUTO_REVIEW_BATCH = 20; // per page load, so opening the feed stays quick
 
 let autoModeration = {};
 
+// 3일 테스트 시작 시각(밀리초). 시작 안 했으면 0.
 function trialStartedMs() {
   const t = autoModeration.trialStartedAt;
   return t && t.toMillis ? t.toMillis() : 0;
 }
 
+// 3일 테스트가 진행 중인가.
 function trialActive() {
   const start = trialStartedMs();
   return start > 0 && Date.now() - start < TRIAL_DAYS * 86400000;
 }
 
+// 관리자 접속 시 밀린 게시글을 분류기에 넘깁니다 (한 번에 최대 20건).
 async function autoReviewPosts() {
   if (!isAdmin()) return;
   const pending = allSlots.filter(
@@ -304,6 +314,7 @@ async function autoReviewPosts() {
   applyFeedFilter();
 }
 
+// 검색어·캐릭터·분류·숨김 조건을 모두 걸러 실제로 카드를 그립니다.
 function applyFeedFilter() {
   updateAdultGate();
   const q = feedSearchInput.value;
@@ -340,6 +351,7 @@ function applyFeedFilter() {
 
 window.addEventListener('resize', debounce(() => applyFeedFilter(), 200));
 
+// 선택된 캐릭터 필터 하나를 해제합니다.
 function clearCharacterFilter(id) {
   selectedCharacters.delete(id);
   const tile = grid.querySelector(`.char-tile[data-char-id="${CSS.escape(id)}"]`);
@@ -384,10 +396,12 @@ function updateReviewProgress() {
   updateAutoBanner();
 }
 
+// 3일 테스트가 끝났는가.
 function trialEnded() {
   return trialStartedMs() > 0 && !trialActive();
 }
 
+// 관리자 안내 배너를 만들거나 이미 있는 것을 돌려줍니다.
 function autoBannerBox() {
   let box = document.getElementById('auto-banner');
   if (!box) {
@@ -399,6 +413,7 @@ function autoBannerBox() {
   return box;
 }
 
+// 자동 조치 설정을 다시 읽고 화면을 갱신합니다.
 async function refreshAuto() {
   autoModeration = await DB.getAutoModeration();
   updateReviewProgress();
@@ -479,6 +494,7 @@ async function updateAutoBanner() {
   });
 }
 
+// 목록 위 제목을 현재 필터에 맞게 바꿉니다.
 function updateFeedHeading() {
   feedHeading.innerHTML = '';
   feedHeading.append('전체 게시글');
@@ -525,10 +541,12 @@ function guessNameFromFilename(filename) {
   return (meaningful.length ? meaningful[meaningful.length - 1] : parts[parts.length - 1]) || base;
 }
 
+// 캐릭터 추가 창의 버튼 문구 (한 명 / 여러 명).
 function updateSaveButtonLabel() {
   charSaveBtn.textContent = pendingBulkEntries.length > 1 ? `${pendingBulkEntries.length}명 추가` : '추가';
 }
 
+// 여러 캐릭터를 한 번에 추가할 때의 미리보기 목록.
 function renderBulkList() {
   charBulkList.innerHTML = '';
   pendingBulkEntries.forEach((entry, i) => {
@@ -565,6 +583,7 @@ function renderBulkList() {
   });
 }
 
+// 캐릭터 추가 창 열기.
 function openModal() {
   nameInput.value = '';
   iconInput.value = '';
@@ -579,6 +598,7 @@ function openModal() {
   nameInput.focus();
 }
 
+// 캐릭터 추가 창 닫기.
 function closeModal() {
   modal.hidden = true;
 }
@@ -659,16 +679,19 @@ charSaveBtn.addEventListener('click', async () => {
   }
 });
 
+// 캐릭터 목록을 못 불러왔을 때의 안내.
 function showCharError() {
   grid.innerHTML =
     '<div class="empty-hint" style="grid-column:1/-1">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
 }
 
+// 게시글을 못 불러왔을 때의 안내.
 function showFeedError() {
   feedGrid.innerHTML =
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';
 }
 
+// 캐릭터와 게시글을 모두 다시 그립니다.
 function renderAll() {
   renderCharacters().catch((err) => {
     console.error(err);

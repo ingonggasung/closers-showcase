@@ -25,6 +25,7 @@ document
   .getElementById('global-fab')
   .addEventListener('click', () => openPostModal(characterId));
 
+// 어떤 캐릭터인지 상단에 표시합니다.
 async function renderHeader() {
   character = await DB.getCharacter(characterId);
   if (!character) {
@@ -38,12 +39,14 @@ async function renderHeader() {
   document.title = `${character.name} - 클로저스 캐릭터 자랑`;
 }
 
+// 이 캐릭터의 게시글만 불러옵니다.
 async function render() {
   await renderHeader();
   allSlots = await DB.getSlotsByCharacter(characterId);
   applySlotFilter();
 }
 
+// 이 페이지 안에서의 검색.
 function applySlotFilter() {
   const q = slotSearchInput.value;
   const field = slotSearchField.value;
@@ -79,6 +82,7 @@ slotSearchInput.addEventListener('input', applySlotFilter);
 slotSearchField.addEventListener('change', applySlotFilter);
 window.addEventListener('resize', debounce(() => applySlotFilter(), 200));
 
+// 못 불러왔을 때의 안내.
 function showLoadError() {
   slotGrid.innerHTML =
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';

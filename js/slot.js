@@ -54,6 +54,7 @@ function distToViewCenter(el) {
   return Math.abs(center - viewCenter);
 }
 
+// 지금 보고 있는 이미지 번호.
 function currentImageIndex() {
   const shots = Array.from(imageRow.querySelectorAll('.shot'));
   let best = 0;
@@ -140,6 +141,7 @@ function autoReviewThisPost() {
   requestAutoReview(slot.id);
 }
 
+// 게시글을 불러와 화면을 구성합니다.
 async function render() {
   currentSlot = await DB.getSlot(slotId);
   if (!currentSlot) {
@@ -150,6 +152,7 @@ async function render() {
   autoReviewThisPost();
 }
 
+// 제목·작성자·이미지·상세표를 그립니다. 작성자면 수정 버튼도.
 function renderContent() {
   const owner = isOwner(currentSlot);
   const editing = owner && editMode;
@@ -200,6 +203,7 @@ function renderContent() {
   renderDetailPanel(editing);
 }
 
+// 이미지 목록. 수정 모드에서는 삭제와 추가가 가능합니다.
 function renderImages(owner) {
   imageRow.innerHTML = '';
   // Rebuilding always marks index 0 as current below, but scrollLeft is a
@@ -308,6 +312,7 @@ imageInput.addEventListener('change', async () => {
   imageInput.value = '';
 });
 
+// 코스튬·악세서리·메모 표. 작성자는 그 자리에서 고칠 수 있습니다.
 function renderDetailPanel(owner) {
   detailPanel.innerHTML = '';
   const parts = currentSlot.parts || {};
@@ -415,6 +420,7 @@ function renderDetailPanel(owner) {
   }
 }
 
+// 게시글을 못 불러왔을 때의 안내.
 function showLoadError() {
   detailPanel.innerHTML =
     '<div class="empty-hint">데이터를 불러오지 못했어요. 잠시 후 새로고침해주세요.</div>';

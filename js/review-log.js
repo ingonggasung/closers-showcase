@@ -13,6 +13,7 @@
 
 let reviewOverlay = null;
 
+// 창의 HTML 뼈대.
 function reviewLogMarkup() {
   return `
     <div class="modal-box modal-box-wide">
@@ -37,12 +38,14 @@ function reviewLogMarkup() {
   `;
 }
 
+// 자동 검토가 뭐라고 했는지 표시하는 딱지.
 function verdictTag(slot) {
   return slot.autoFlag
     ? '<span class="train-tag adult">외부로 판정</span>'
     : '<span class="train-tag">인게임으로 판정</span>';
 }
 
+// 관리자가 판정했는지, 뭐라고 했는지.
 function rulingText(slot) {
   if (slot.verifiedCapture === true) return '관리자 확인: 인게임 맞음';
   if (slot.verifiedCapture === false) return '관리자 확인: 인게임 아님';
@@ -77,6 +80,7 @@ async function judgeReview(slot, aiWasRight) {
   if (typeof invalidateModels === 'function') invalidateModels();
 }
 
+// 목록의 한 줄.
 function reviewRow(s) {
   return `
     <div class="train-item">
@@ -98,6 +102,7 @@ function reviewRow(s) {
     </div>`;
 }
 
+// 맞음/틀림 버튼 연결.
 function wireJudgeButtons(container, byId) {
   container.querySelectorAll('.rv-ok, .rv-no').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -143,6 +148,7 @@ async function renderReviewLog() {
   }
 }
 
+// 자동 삭제 보관함. 각 줄에 복구 버튼이 붙습니다.
 async function renderDeletedLog() {
   const list = document.getElementById('rv-del-list');
   const count = document.getElementById('rv-del-count');
@@ -186,6 +192,7 @@ async function renderDeletedLog() {
   }
 }
 
+// 창 열기.
 function openReviewLog() {
   if (!reviewOverlay) {
     reviewOverlay = document.createElement('div');

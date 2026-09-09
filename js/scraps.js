@@ -7,6 +7,7 @@ const scrapGrid = document.getElementById('scrap-grid');
 
 mountAuthBar(document.getElementById('auth-bar'));
 
+// 스크랩한 게시글을 불러와 그립니다.
 async function render() {
   if (!currentUser) {
     scrapGrid.innerHTML = '<div class="empty-hint">로그인하면 스크랩한 게시글을 볼 수 있어요.</div>';

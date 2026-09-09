@@ -29,6 +29,7 @@ let postFields = {};
 // initial batch would silently discard the first batch.
 let pendingPostImages = [];
 
+// 코스튬·악세서리 입력칸을 새로 만듭니다.
 function rebuildPostFields() {
   const costume = buildPartsFieldGrid(COSTUME_KEYS);
   const accessory = buildPartsFieldGrid(ACCESSORY_KEYS);
@@ -44,6 +45,7 @@ const postNotesCount = document.getElementById('post-notes-count');
 const postSubmitBtn = document.getElementById('post-submit');
 const globalFab = document.getElementById('global-fab');
 
+// 고른 사진들의 미리보기. 여기서 뺄 수도 있습니다.
 function renderPostImagePreview() {
   postImagePreview.innerHTML = '';
   pendingPostImages.forEach((file, i) => {
@@ -71,6 +73,7 @@ function renderPostImagePreview() {
   });
 }
 
+// 등록 창을 비웁니다.
 function resetPostForm() {
   postTitleInput.value = '';
   postImagesInput.value = '';
@@ -83,6 +86,7 @@ function resetPostForm() {
   postGameCapture.checked = false;
 }
 
+// 등록 창 열기. 캐릭터 목록을 매번 새로 채웁니다.
 async function openPostModal(prefillCharacterId) {
   if (!currentUser) {
     alert('로그인이 필요합니다.');
@@ -115,6 +119,7 @@ async function openPostModal(prefillCharacterId) {
   }
 }
 
+// 등록 창 닫기.
 function closePostModal() {
   postModal.hidden = true;
 }
@@ -180,6 +185,7 @@ postSubmitBtn.addEventListener('click', async () => {
   }
 });
 
+// 로그인했을 때만 우하단 + 버튼을 보여줍니다.
 function updateFabVisibility(user) {
   globalFab.hidden = !user || !!(currentUserProfile && currentUserProfile.blocked);
 }

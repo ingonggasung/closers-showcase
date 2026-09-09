@@ -15,6 +15,7 @@
 
 let activeContextMenu = null;
 
+// 열려 있는 메뉴를 닫습니다.
 function closeContextMenu() {
   if (!activeContextMenu) return;
   activeContextMenu.remove();
@@ -24,10 +25,12 @@ function closeContextMenu() {
   document.removeEventListener('keydown', onContextMenuKeydown);
 }
 
+// Esc 로 메뉴 닫기.
 function onContextMenuKeydown(e) {
   if (e.key === 'Escape') closeContextMenu();
 }
 
+// 지정한 위치에 메뉴를 띄웁니다. 화면 밖으로 나가면 안쪽으로 당깁니다.
 function openContextMenu(x, y, items) {
   closeContextMenu();
   const menu = document.createElement('div');
@@ -59,6 +62,7 @@ function openContextMenu(x, y, items) {
   }, 0);
 }
 
+// 관리자의 인게임 여부 판정을 저장합니다.
 async function setVerdict(slot, verdict) {
   try {
     await DB.setCaptureVerdict(slot.id, verdict);
@@ -69,11 +73,13 @@ async function setVerdict(slot, verdict) {
   }
 }
 
+// 공유용 주소를 만듭니다.
 function slotShareUrl(slot) {
   const base = location.href.slice(0, location.href.lastIndexOf('/') + 1);
   return `${base}slot.html?id=${encodeURIComponent(slot.id)}&cid=${encodeURIComponent(slot.characterId)}`;
 }
 
+// 공유. 가능하면 기기 공유창, 아니면 주소 복사.
 async function shareSlot(slot) {
   const url = slotShareUrl(slot);
   const title = slotDisplayTitle(slot);

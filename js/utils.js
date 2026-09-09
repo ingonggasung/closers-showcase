@@ -103,6 +103,7 @@ async function updateFaviconBadge() {
   }
 }
 
+// 연속 호출을 마지막 한 번으로 묶습니다.
 function debounce(fn, wait) {
   let timer;
   return (...args) => {
@@ -111,6 +112,7 @@ function debounce(fn, wait) {
   };
 }
 
+// 이용자가 쓴 글을 화면에 넣기 전 안전하게 바꿉니다. 빠뜨리면 보안 구멍이 됩니다.
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (ch) => ({
     '&': '&amp;',
@@ -143,6 +145,7 @@ function escapeHtml(str) {
 // same function; keepalive so the request survives the page navigating away.
 const REVIEW_ENDPOINT = 'https://closers-showcase.vercel.app/api/review';
 
+// 서버에 자동 검토를 요청합니다. 응답은 기다리지 않습니다.
 function requestAutoReview(slotId) {
   try {
     fetch(REVIEW_ENDPOINT, {
