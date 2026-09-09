@@ -560,7 +560,9 @@ select:hover { border-color: var(--accent); }
 /* ---------- Character grid (index) ---------- */
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* minmax(0, 1fr), not 1fr: a plain fr has an auto minimum, so a long
+     character name widens its column and squeezes every other icon. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -573,6 +575,7 @@ select:hover { border-color: var(--accent); }
   align-items: center;
   gap: 6px;
   position: relative;
+  min-width: 0;
 }
 .char-tile[data-role="item"] { cursor: grab; }
 .char-tile[data-role="item"]:active { cursor: grabbing; }
@@ -1049,7 +1052,7 @@ select:hover { border-color: var(--accent); }
   /* Always keep 6 columns here; icons shrink to fit whatever width
      the gutter ends up being rather than reflowing to fewer columns. */
   #filter-section .char-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
     padding: 12px;
   }
@@ -1536,12 +1539,12 @@ select:hover { border-color: var(--accent); }
 
 /* ---------- Responsive (tablet / mobile) ---------- */
 @media (max-width: 720px) {
-  .char-grid { grid-template-columns: repeat(4, 1fr); }
+  .char-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (max-width: 480px) {
   .page { padding: 20px 14px 48px; }
-  .char-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
+  .char-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; }
   .post-parts-grid { grid-template-columns: 1fr; }
   .section-head { flex-wrap: wrap; row-gap: 8px; }
   .section-actions { width: 100%; }
