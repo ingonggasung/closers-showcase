@@ -340,7 +340,7 @@ function applyFeedFilter() {
     feedGrid.innerHTML = `
       <div class="empty-illustrated">
         <p>아직 게시된게 없어요</p>
-        <img src="img/empty-tris.webp?v=128" alt="" />
+        <img src="img/empty-tris.webp?v=129" alt="" />
       </div>`;
     return;
   }

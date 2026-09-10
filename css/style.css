@@ -1691,9 +1691,13 @@ select:hover { border-color: var(--accent); }
 
 /* 필터 결과가 없을 때의 안내 (게시글 영역 가운데) */
 .empty-illustrated {
-  grid-column: 1 / -1;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-  padding: 60px 20px;
+  /* .slot-grid 는 격자가 아니라 flex 열 묶음이라, 그냥 넣으면 첫 번째 열
+     자리에 끼어 왼쪽으로 붙습니다. 폭을 전부 차지하게 해야 가운데로 옵니다. */
+  flex: 1 1 100%;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  padding: 80px 20px;
   color: var(--text-dim);
   text-align: center;
 }
