@@ -90,6 +90,20 @@ const DB = {
     return true;
   },
 
+  // 이미 등록된 예시의 인게임 여부를 고칩니다. 판정을 뒤집었는데 예시가 옛
+  // 라벨로 남아 있으면 모델이 계속 틀린 쪽을 배웁니다.
+  async setTrainingCaptureByUrl(url, capture) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore
+      .collection('trainingSamples')
+      .where('url', '==', url)
+      .limit(1)
+      .get();
+    if (snap.empty) return false;
+    await snap.docs[0].ref.update({ capture });
+    return true;
+  },
+
   // 학습 예시 전체를 최신순으로.
   async getTrainingSamples() {
     const snap = await firestore

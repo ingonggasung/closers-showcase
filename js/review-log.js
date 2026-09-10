@@ -20,6 +20,23 @@ function reviewLogMarkup() {
       <h3>AI 검토 내역</h3>
 
       <h4 class="train-list-head">확인 대기 <span id="rv-count"></span></h4>
+
+      <div class="rv-bulk" id="rv-bulk">
+        <label class="rv-all"><input type="checkbox" id="rv-all" /> 전체 선택</label>
+        <span class="train-note" id="rv-selected">0건 선택</span>
+        <span class="rv-bulk-group">
+          인게임 여부
+          <button class="pill rv-bulk-btn" data-capture="in">인게임</button>
+          <button class="pill rv-bulk-btn" data-capture="out">외부</button>
+        </span>
+        <span class="rv-bulk-group">
+          탭
+          <button class="pill rv-bulk-btn" data-cat="일반">일반</button>
+          <button class="pill rv-bulk-btn" data-cat="수영복">수영복</button>
+          <button class="pill rv-bulk-btn" data-cat="성인">성인</button>
+        </span>
+      </div>
+
       <div class="train-list" id="rv-list">불러오는 중...</div>
 
       <h4 class="train-list-head">
@@ -56,8 +73,16 @@ function rulingText(slot) {
 // post, and it feeds that post's image back in as a labelled example. Every
 // correction makes the next review better - that is the whole point.
 async function judgeReview(slot, aiWasRight) {
-  const reallyIngame = slot.autoFlag ? !aiWasRight : aiWasRight;
+  // 맞음/틀림은 AI 가 뭐라고 했는지에 대한 상대적인 답이라, 절대값으로 바꿔서
+  // 일괄 처리와 같은 함수를 타게 합니다.
+  return applyCaptureVerdict(slot, slot.autoFlag ? !aiWasRight : aiWasRight);
+}
+
+// 인게임 여부 확정. 게시글에 판정을 남기고, 그 이미지를 정답 라벨과 함께
+// 학습 예시로 넣습니다.
+async function applyCaptureVerdict(slot, reallyIngame, quiet) {
   await DB.setCaptureVerdict(slot.id, reallyIngame);
+  slot.verifiedCapture = reallyIngame;
   const url = (slot.images || [])[0];
   if (url) {
     try {
@@ -69,11 +94,13 @@ async function judgeReview(slot, aiWasRight) {
         note: '검토 내역에서 확인',
       });
     } catch (err) {
-      // Already registered is fine; anything else means the correction did
-      // not become training data, which the admin needs to know.
-      if (!/이미 등록된/.test(err.message)) {
+      if (/이미 등록된/.test(err.message)) {
+        // 이미 예시로 있는 이미지면 라벨만 지금 답으로 맞춰줍니다.
+        await DB.setTrainingCaptureByUrl(url, reallyIngame ? '인게임' : '외부');
+      } else {
         console.warn(err);
-        alert('판정은 저장했지만 학습 데이터 추가에 실패했습니다: ' + err.message);
+        if (!quiet) alert('판정은 저장했지만 학습 데이터 추가에 실패했습니다: ' + err.message);
+        else throw err;
       }
     }
   }
@@ -84,6 +111,7 @@ async function judgeReview(slot, aiWasRight) {
 function reviewRow(s) {
   return `
     <div class="train-item">
+      <input type="checkbox" class="rv-pick" data-id="${s.id}" />
       ${(s.images || [])[0] ? `<img src="${escapeHtml(s.images[0])}" alt="" />` : ''}
       <div class="train-item-body">
         <div>${verdictTag(s)} <b>${escapeHtml(s.title || '(제목 없음)')}</b></div>
@@ -114,6 +142,70 @@ function reviewRow(s) {
 }
 
 // 맞음/틀림 버튼 연결.
+// 지금 체크된 줄들의 게시글.
+function selectedSlots(byId) {
+  return [...document.querySelectorAll('.rv-pick:checked')]
+    .map((el) => byId[el.dataset.id])
+    .filter(Boolean);
+}
+
+function updateSelectedCount() {
+  const n = document.querySelectorAll('.rv-pick:checked').length;
+  document.getElementById('rv-selected').textContent = `${n}건 선택`;
+  document
+    .querySelectorAll('.rv-bulk-btn')
+    .forEach((b) => (b.disabled = n === 0));
+}
+
+// 체크한 게시글들에 같은 답을 한 번에 적용합니다. 인게임 여부와 탭은 서로
+// 독립이라, 한쪽만 고치고 다른 쪽은 건드리지 않을 수 있습니다.
+function wireBulkActions(byId, rerender) {
+  const bar = document.getElementById('rv-bulk');
+  const all = document.getElementById('rv-all');
+
+  all.onchange = () => {
+    document.querySelectorAll('#rv-list .rv-pick').forEach((el) => (el.checked = all.checked));
+    updateSelectedCount();
+  };
+  document
+    .querySelectorAll('.rv-pick')
+    .forEach((el) => el.addEventListener('change', updateSelectedCount));
+
+  bar.querySelectorAll('.rv-bulk-btn').forEach((btn) => {
+    btn.onclick = async () => {
+      const slots = selectedSlots(byId);
+      if (!slots.length) return;
+      const capture = btn.dataset.capture;
+      const cat = btn.dataset.cat;
+      const what = capture ? (capture === 'in' ? '인게임' : '외부') : cat;
+      if (!confirm(`선택한 ${slots.length}건을 "${what}" 으로 처리할까요?`)) return;
+
+      bar.querySelectorAll('.rv-bulk-btn').forEach((b) => (b.disabled = true));
+      const failed = [];
+      for (const slot of slots) {
+        try {
+          if (capture) {
+            await applyCaptureVerdict(slot, capture === 'in', true);
+          } else {
+            await DB.updateSlot(slot.id, { category: cat });
+            slot.category = cat;
+            const url = (slot.images || [])[0];
+            if (url) await DB.setTrainingLabelByUrl(url, cat);
+          }
+        } catch (err) {
+          console.warn(err);
+          failed.push(slot.title || slot.id);
+        }
+      }
+      if (typeof invalidateModels === 'function') invalidateModels();
+      if (failed.length) alert('일부 처리에 실패했습니다:\n' + failed.join('\n'));
+      await rerender();
+    };
+  });
+
+  updateSelectedCount();
+}
+
 // 분류 선택칸 연결. 게시글의 탭과, 그 이미지로 만든 학습 예시를 함께 고칩니다.
 function wireCategorySelects(container, byId) {
   container.querySelectorAll('.rv-cat').forEach((sel) => {
@@ -178,6 +270,8 @@ async function renderReviewLog() {
     wireJudgeButtons(doneList, byId);
     wireCategorySelects(list, byId);
     wireCategorySelects(doneList, byId);
+    document.getElementById('rv-all').checked = false;
+    wireBulkActions(byId, renderReviewLog);
   } catch (err) {
     list.textContent = '불러오지 못했습니다: ' + err.message;
   }
