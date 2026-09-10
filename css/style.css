@@ -1688,3 +1688,14 @@ select:hover { border-color: var(--accent); }
 .rv-bulk .pill:disabled { opacity: .4; cursor: default; }
 .rv-all { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .rv-pick { flex: none; width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* 필터 결과가 없을 때의 안내 (게시글 영역 가운데) */
+.empty-illustrated {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 60px 20px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.empty-illustrated p { margin: 0; font-size: 15px; }
+.empty-illustrated img { width: 128px; height: 128px; image-rendering: auto; }

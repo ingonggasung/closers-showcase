@@ -336,7 +336,12 @@ function applyFeedFilter() {
   });
 
   if (filtered.length === 0) {
-    feedGrid.innerHTML = '<div class="empty-hint">조건에 맞는 게시글이 없어요.</div>';
+    // 필터를 걸었는데 결과가 없을 때. 빈 화면에 한 줄만 있는 것보다 낫습니다.
+    feedGrid.innerHTML = `
+      <div class="empty-illustrated">
+        <p>아직 게시된게 없어요</p>
+        <img src="img/empty-tris.webp?v=128" alt="" />
+      </div>`;
     return;
   }
 
