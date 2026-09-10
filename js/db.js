@@ -76,6 +76,20 @@ const DB = {
     return ref.id;
   },
 
+  // 이 이미지로 만든 학습 예시의 탭 분류를 함께 고칩니다. 검토 내역에서 분류를
+  // 바꿨을 때 학습 예시가 옛 분류로 남아 있으면 다음 판정이 어긋납니다.
+  async setTrainingLabelByUrl(url, label) {
+    if (!isAdmin()) throw new Error('관리자만 가능합니다.');
+    const snap = await firestore
+      .collection('trainingSamples')
+      .where('url', '==', url)
+      .limit(1)
+      .get();
+    if (snap.empty) return false;
+    await snap.docs[0].ref.update({ label });
+    return true;
+  },
+
   // 학습 예시 전체를 최신순으로.
   async getTrainingSamples() {
     const snap = await firestore

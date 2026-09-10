@@ -87,6 +87,17 @@ function reviewRow(s) {
       ${(s.images || [])[0] ? `<img src="${escapeHtml(s.images[0])}" alt="" />` : ''}
       <div class="train-item-body">
         <div>${verdictTag(s)} <b>${escapeHtml(s.title || '(제목 없음)')}</b></div>
+        <div class="rv-cat-row">
+          <span class="train-note">탭</span>
+          <select class="rv-cat" data-id="${s.id}">
+            ${['일반', '수영복', '성인']
+              .map(
+                (v) =>
+                  `<option value="${v}"${v === (s.category || '일반') ? ' selected' : ''}>${v}</option>`
+              )
+              .join('')}
+          </select>
+        </div>
         <p class="train-note">
           확신도 ${Math.round((s.autoConfidence || 0) * 100)}%${
             s.autoSimilarity != null ? ` (유사도 ${s.autoSimilarity.toFixed(2)})` : ''
@@ -103,6 +114,28 @@ function reviewRow(s) {
 }
 
 // 맞음/틀림 버튼 연결.
+// 분류 선택칸 연결. 게시글의 탭과, 그 이미지로 만든 학습 예시를 함께 고칩니다.
+function wireCategorySelects(container, byId) {
+  container.querySelectorAll('.rv-cat').forEach((sel) => {
+    sel.addEventListener('change', async () => {
+      const slot = byId[sel.dataset.id];
+      const value = sel.value;
+      sel.disabled = true;
+      try {
+        await DB.updateSlot(slot.id, { category: value });
+        slot.category = value;
+        const url = (slot.images || [])[0];
+        if (url) await DB.setTrainingLabelByUrl(url, value);
+        if (typeof invalidateModels === 'function') invalidateModels();
+      } catch (err) {
+        alert('분류 변경에 실패했습니다: ' + err.message);
+      } finally {
+        sel.disabled = false;
+      }
+    });
+  });
+}
+
 function wireJudgeButtons(container, byId) {
   container.querySelectorAll('.rv-ok, .rv-no').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -143,6 +176,8 @@ async function renderReviewLog() {
 
     wireJudgeButtons(list, byId);
     wireJudgeButtons(doneList, byId);
+    wireCategorySelects(list, byId);
+    wireCategorySelects(doneList, byId);
   } catch (err) {
     list.textContent = '불러오지 못했습니다: ' + err.message;
   }

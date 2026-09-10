@@ -1672,3 +1672,6 @@ select:hover { border-color: var(--accent); }
 .dict-src { flex: 0 0 38%; font-size: 13px; word-break: break-all; }
 .dict-out { flex: 1; margin: 0; padding: 6px 10px; font-size: 13px; }
 .dict-out.saved { border-color: var(--accent); }
+
+.rv-cat-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.rv-cat { width: auto; min-width: 86px; margin: 0; padding: 4px 8px; font-size: 12px; }
